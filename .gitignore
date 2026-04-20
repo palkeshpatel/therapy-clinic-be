@@ -1,0 +1,32 @@
+.idea/
+.vscode/
+
+/vendor/
+/node_modules/
+
+# Laravel / PHP
+/.phpunit.result.cache
+/storage/*.key
+/storage/app/public/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/testing/*
+/storage/framework/views/*
+/storage/logs/*
+
+/bootstrap/cache/*
+
+# Environment files
+.env
+.env.*.local
+
+# Frontend build artifacts (if present later)
+/public/build/
+/public/hot
+
+# OS / misc
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
