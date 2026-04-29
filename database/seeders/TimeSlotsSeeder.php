@@ -12,20 +12,44 @@ class TimeSlotsSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // Hourly slots from 09:00 to 18:00
-        for ($h = 9; $h < 18; $h++) {
-            $start = sprintf('%02d:00:00', $h);
-            $end   = sprintf('%02d:00:00', $h + 1);
+        // 30-minute slots from 09:00 to 19:30 (client schedule: 9:00 AM – 7:30 PM)
+        $slots = [];
+        $startHour   = 9;
+        $startMinute = 0;
+
+        while (true) {
+            $endHour   = $startHour;
+            $endMinute = $startMinute + 30;
+
+            if ($endMinute === 60) {
+                $endMinute = 0;
+                $endHour++;
+            }
+
+            $startTime = sprintf('%02d:%02d:00', $startHour, $startMinute);
+            $endTime   = sprintf('%02d:%02d:00', $endHour, $endMinute);
 
             DB::table('time_slots')->updateOrInsert(
-                ['start_time' => $start, 'end_time' => $end],
+                ['start_time' => $startTime, 'end_time' => $endTime],
                 [
-                    'duration_minutes' => 60,
+                    'duration_minutes' => 30,
                     'is_active'        => true,
                     'created_at'       => $now,
                     'updated_at'       => $now,
                 ]
             );
+
+            // Advance
+            $startHour   = $endHour;
+            $startMinute = $endMinute;
+
+            // Stop after 19:30 slot (last slot ends at 20:00)
+            if ($startHour === 19 && $startMinute === 30) {
+                break;
+            }
+            if ($startHour >= 20) {
+                break;
+            }
         }
     }
 }
