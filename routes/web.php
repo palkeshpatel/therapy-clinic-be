@@ -65,6 +65,8 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->get('patients/{id}', 'Api\\V1\\PatientController@show');
         $router->get('patients/{id}/medical-record', 'Api\\V1\\PatientMedicalRecordController@show');
         $router->get('patients/{id}/documents', 'Api\\V1\\PatientDocumentController@index');
+        $router->get('patients/{id}/sessions', 'Api\\V1\\PatientController@sessions');
+        $router->get('patients/{id}/invoices', 'Api\\V1\\PatientController@invoices');
     });
     $router->group(['middleware' => ['auth', 'role:Admin,Staff']], function () use ($router) {
         $router->post('patients', 'Api\\V1\\PatientController@store');
@@ -98,6 +100,8 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->get('therapists', 'Api\\V1\\TherapistController@index');
         $router->get('therapists/{id}', 'Api\\V1\\TherapistController@show');
         $router->get('therapists/{id}/documents', 'Api\\V1\\TherapistDocumentController@index');
+        $router->get('therapists/{id}/sessions', 'Api\\V1\\TherapistController@sessions');
+        $router->get('therapists/{id}/schedule', 'Api\\V1\\TherapistController@schedule');
     });
     $router->group(['middleware' => ['auth', 'role:Admin,Staff']], function () use ($router) {
         $router->post('therapists', 'Api\\V1\\TherapistController@store');

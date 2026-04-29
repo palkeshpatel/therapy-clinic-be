@@ -119,5 +119,37 @@ class TherapistController extends Controller
         $therapist->delete();
         return ApiResponse::success(null, 'Therapist deleted');
     }
-}
 
+    public function sessions($id)
+    {
+        $therapist = Therapist::find($id);
+        if (!$therapist) {
+            return ApiResponse::error('Therapist not found', 404);
+        }
+        $sessions = \App\Models\TherapySession::query()
+            ->with(['patient', 'therapy', 'slot'])
+            ->where('therapist_id', $id)
+            ->orderByDesc('session_date')
+            ->paginate(15);
+        return ApiResponse::paginate($sessions, 'OK');
+    }
+
+    public function schedule(Request $request, $id)
+    {
+        $therapist = Therapist::find($id);
+        if (!$therapist) {
+            return ApiResponse::error('Therapist not found', 404);
+        }
+        $query = \App\Models\DailySchedule::query()
+            ->with(['slot', 'patient', 'therapy'])
+            ->where('therapist_id', $id);
+        if ($from = $request->input('from')) {
+            $query->whereDate('date', '>=', $from);
+        }
+        if ($to = $request->input('to')) {
+            $query->whereDate('date', '<=', $to);
+        }
+        $rows = $query->orderBy('date')->orderBy('slot_id')->get();
+        return ApiResponse::success($rows, 'OK');
+    }
+}

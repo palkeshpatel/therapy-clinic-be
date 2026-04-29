@@ -112,5 +112,32 @@ class PatientController extends Controller
         $patient->delete();
         return ApiResponse::success(null, 'Patient deleted');
     }
-}
 
+    public function sessions($id)
+    {
+        $patient = Patient::find($id);
+        if (!$patient) {
+            return ApiResponse::error('Patient not found', 404);
+        }
+        $sessions = \App\Models\TherapySession::query()
+            ->with(['therapist', 'therapy', 'slot'])
+            ->where('patient_id', $id)
+            ->orderByDesc('session_date')
+            ->paginate(15);
+        return ApiResponse::paginate($sessions, 'OK');
+    }
+
+    public function invoices($id)
+    {
+        $patient = Patient::find($id);
+        if (!$patient) {
+            return ApiResponse::error('Patient not found', 404);
+        }
+        $invoices = \App\Models\Invoice::query()
+            ->with(['items', 'payments'])
+            ->where('patient_id', $id)
+            ->orderByDesc('invoice_date')
+            ->paginate(15);
+        return ApiResponse::paginate($invoices, 'OK');
+    }
+}
