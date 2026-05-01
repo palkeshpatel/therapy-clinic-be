@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Patient;
 use App\Models\PatientDocument;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -58,7 +59,7 @@ class PatientDocumentController extends Controller
                 'patient_id' => $patient->id,
                 'document_type' => (string) $request->input('document_type'),
                 'file_path' => $relativePath,
-                'uploaded_at' => now(),
+                'uploaded_at' => Carbon::now(),
             ]);
 
             return ApiResponse::success($doc, 'Document uploaded', 201);

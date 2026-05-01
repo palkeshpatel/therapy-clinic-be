@@ -10,7 +10,11 @@ return new class extends Migration
     {
         Schema::create('waiting_list', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('patient_id');
+            /** Nullable when entry is a pre-registration inquiry (lead) without a patient record yet */
+            $table->unsignedBigInteger('patient_id')->nullable();
+            $table->string('contact_name', 150)->nullable();
+            $table->string('contact_phone', 20)->nullable();
+            $table->text('notes')->nullable();
             $table->unsignedBigInteger('therapy_id');
             $table->date('requested_date');
             $table->integer('priority')->default(0);

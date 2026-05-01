@@ -438,5 +438,230 @@ class DemoDataSeeder extends Seeder
                 ]);
             }
         }
+
+        // ════════════════════════════════════════════════════════
+        // 9. EXTRA PATIENTS + MIXED STATUS (demo feels like a real census)
+        // ════════════════════════════════════════════════════════
+        $extraPatients = [
+            ['patient_name' => 'Meera Iyer',      'phone' => '9900001011', 'email' => 'guardian.meera@example.com',      'dob' => '2014-05-08', 'gender' => 'female', 'address' => 'JP Nagar, Bengaluru',    'status' => 'inactive'],
+            ['patient_name' => 'Shaurya Desai',   'phone' => '9900001012', 'email' => 'parent.shaurya@example.com',      'dob' => '2016-02-19', 'gender' => 'male',   'address' => 'Banashankari, Bengaluru', 'status' => 'discharged'],
+            ['patient_name' => 'Tara Krishnan',  'phone' => '9900001013', 'email' => 'tara.family@example.com',         'dob' => '2018-09-01', 'gender' => 'female', 'address' => 'Ulsoor, Bengaluru',       'status' => 'active'],
+            ['patient_name' => 'Dev Khanna',      'phone' => '9900001014', 'email' => 'dev.k.parent@example.com',       'dob' => '2015-11-11', 'gender' => 'male',   'address' => 'MG Road, Bengaluru',       'status' => 'active'],
+            ['patient_name' => 'Kiara Bhatia',    'phone' => '9900001015', 'email' => 'kiara.contact@example.com',      'dob' => '2017-01-25', 'gender' => 'female', 'address' => 'Marathahalli, Bengaluru',  'status' => 'inactive'],
+            ['patient_name' => 'Reyansh Pillai',  'phone' => '9900001016', 'email' => 'reyansh.guardian@example.com',   'dob' => '2019-06-14', 'gender' => 'male',   'address' => 'Bellandur, Bengaluru',     'status' => 'active'],
+            ['patient_name' => 'Myra Saxena',     'phone' => '9900001017', 'email' => 'myra.home@example.com',          'dob' => '2016-08-30', 'gender' => 'female', 'address' => 'Hebbal, Bengaluru',        'status' => 'discharged'],
+            ['patient_name' => 'Vihaan Chowdhury','phone' => '9900001018', 'email' => 'vihaan.cp@example.com',           'dob' => '2018-12-03', 'gender' => 'male',   'address' => 'Richmond Town, Bengaluru', 'status' => 'active'],
+            ['patient_name' => 'Pihu Sen',        'phone' => '9900001019', 'email' => 'pihu.sen.family@example.com',      'dob' => '2020-04-22', 'gender' => 'female', 'address' => 'Domlur, Bengaluru',        'status' => 'active'],
+            ['patient_name' => 'Dhruv Malhotra',  'phone' => '9900001020', 'email' => 'dhruv.malhotra@example.com',      'dob' => '2014-10-17', 'gender' => 'male',   'address' => 'Sadashivanagar, Bengaluru','status' => 'inactive'],
+        ];
+
+        foreach ($extraPatients as $p) {
+            if (! DB::table('patients')->where('phone', $p['phone'])->exists()) {
+                $patientIds[] = DB::table('patients')->insertGetId(array_merge($p, ['created_at' => $now, 'updated_at' => $now]));
+            }
+        }
+
+        // Refresh patient id list for downstream loops
+        $allPatientIds = DB::table('patients')->orderBy('id')->pluck('id')->all();
+
+        // ════════════════════════════════════════════════════════
+        // 10. ATTENDANCE HISTORY (last 21 weekdays — realistic punch times)
+        // ════════════════════════════════════════════════════════
+        $therapyKeys = array_keys($therapyIds);
+        for ($d = 1; $d <= 21; $d++) {
+            $day = Carbon::today()->subDays($d);
+            if ($day->isWeekend()) {
+                continue;
+            }
+            $dateStr = $day->toDateString();
+            foreach ($therapistIds as $ti => $tid) {
+                if (($ti + $d) % 3 === 0) {
+                    continue;
+                }
+                $in = Carbon::parse($dateStr.' 09:05:00')->addMinutes(($ti * 7 + $d * 3) % 45);
+                $out = Carbon::parse($dateStr.' 17:12:00')->addMinutes(($ti * 5 + $d) % 40);
+                DB::table('therapist_attendance')->updateOrInsert(
+                    ['therapist_id' => $tid, 'date' => $dateStr],
+                    ['check_in' => $in, 'check_out' => $out, 'created_at' => $now, 'updated_at' => $now]
+                );
+            }
+        }
+
+        // ════════════════════════════════════════════════════════
+        // 11. LEAVE REQUESTS (mix of pending / approved / rejected)
+        // ════════════════════════════════════════════════════════
+        $leaveSeed = [
+            [$therapistIds[1] ?? null, Carbon::today()->addDays(5)->toDateString(), 'sick', 'Fever — medical certificate uploaded', 'pending'],
+            [$therapistIds[3] ?? null, Carbon::today()->addDays(12)->toDateString(), 'personal', 'Family function', 'approved'],
+            [$therapistIds[2] ?? null, Carbon::today()->subDays(8)->toDateString(), 'sick', 'Flu recovery', 'approved'],
+            [$therapistIds[5] ?? null, Carbon::today()->subDays(3)->toDateString(), 'casual', 'Short trip', 'rejected'],
+            [$therapistIds[4] ?? null, Carbon::today()->addDays(18)->toDateString(), 'training', 'External workshop', 'pending'],
+        ];
+        foreach ($leaveSeed as [$tid, $ldate, $ltype, $reason, $lst]) {
+            if (! $tid) {
+                continue;
+            }
+            $exists = DB::table('therapist_leaves')
+                ->where('therapist_id', $tid)
+                ->whereDate('leave_date', $ldate)
+                ->exists();
+            if (! $exists) {
+                DB::table('therapist_leaves')->insert([
+                    'therapist_id' => $tid,
+                    'leave_date' => $ldate,
+                    'leave_type' => $ltype,
+                    'reason' => $reason,
+                    'status' => $lst,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
+
+        // ════════════════════════════════════════════════════════
+        // 12. MORE SESSIONS (spread over 56 days / all therapists busy)
+        // ════════════════════════════════════════════════════════
+        $slotPool = $slotIds;
+        $firstSlotId = $slotPool[0] ?? null;
+        for ($d = 2; $d <= 56; $d += 2) {
+            $sessionDay = Carbon::today()->subDays($d);
+            if ($sessionDay->isWeekend()) {
+                continue;
+            }
+            $pid = $allPatientIds[($d + 3) % max(count($allPatientIds), 1)] ?? null;
+            $tid = $therapistIds[$d % max(count($therapistIds), 1)] ?? null;
+            $tname = $therapyKeys[$d % max(count($therapyKeys), 1)] ?? 'Speech Therapy';
+            $thId = $therapyIds[$tname] ?? null;
+            $sid = $slotPool[$d % max(count($slotPool), 1)] ?? $firstSlotId;
+            if (! $pid || ! $tid || ! $thId || ! $sid) {
+                continue;
+            }
+            $exists = DB::table('sessions')
+                ->where('patient_id', $pid)
+                ->where('session_date', $sessionDay->toDateString())
+                ->where('therapist_id', $tid)
+                ->exists();
+            if ($exists) {
+                continue;
+            }
+            $statusRoll = ['completed', 'completed', 'completed', 'absent', 'cancelled'][$d % 5];
+            DB::table('sessions')->insert([
+                'patient_id' => $pid,
+                'therapist_id' => $tid,
+                'therapy_id' => $thId,
+                'slot_id' => $sid,
+                'session_date' => $sessionDay->toDateString(),
+                'status' => $statusRoll,
+                'notes' => match ($statusRoll) {
+                    'completed' => 'Session goals met; homework assigned.',
+                    'absent' => 'No-show; guardian notified.',
+                    default => 'Cancelled — slot reopened.',
+                },
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+
+        // ════════════════════════════════════════════════════════
+        // 13. EXTRA INVOICES (rolling numbers — realistic pipeline)
+        // ════════════════════════════════════════════════════════
+        $extraInv = [];
+        $seqStart = 6;
+        for ($i = 0; $i < 12; $i++) {
+            $pIdx = ($allPatientIds[$i % count($allPatientIds)] ?? null);
+            if (! $pIdx) {
+                continue;
+            }
+            $invDate = Carbon::today()->subDays(20 - $i * 3);
+            $extraInv[] = [
+                'invoice_no' => 'INV-2026-'.str_pad((string) ($seqStart + $i), 4, '0', STR_PAD_LEFT),
+                'patient_id' => $pIdx,
+                'invoice_date' => $invDate->toDateString(),
+                'due_date' => $invDate->copy()->addDays(14)->toDateString(),
+                'therapy' => $therapyKeys[$i % count($therapyKeys)],
+                'qty' => ($i % 3) + 1,
+                'status' => ['paid', 'partial', 'pending'][$i % 3],
+            ];
+        }
+        foreach ($extraInv as $inv) {
+            if (DB::table('invoices')->where('invoice_no', $inv['invoice_no'])->exists()) {
+                continue;
+            }
+            $price = (int) DB::table('therapies')->where('therapy_name', $inv['therapy'])->value('default_price');
+            $qty = $inv['qty'];
+            $total = $price * $qty;
+            $paid = match ($inv['status']) {
+                'paid' => $total,
+                'partial' => (int) floor($total / 2),
+                default => 0,
+            };
+            $invoiceId = DB::table('invoices')->insertGetId([
+                'invoice_no' => $inv['invoice_no'],
+                'patient_id' => $inv['patient_id'],
+                'invoice_date' => $inv['invoice_date'],
+                'due_date' => $inv['due_date'],
+                'total_amount' => $total,
+                'paid_amount' => $paid,
+                'status' => $inv['status'],
+                'notes' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            DB::table('invoice_items')->insert([
+                'invoice_id' => $invoiceId,
+                'therapy_id' => $therapyIds[$inv['therapy']] ?? null,
+                'description' => $inv['therapy'].' × '.$qty.' sessions',
+                'quantity' => $qty,
+                'amount' => $price,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+            if ($paid > 0) {
+                DB::table('payments')->insert([
+                    'invoice_id' => $invoiceId,
+                    'amount' => $paid,
+                    'payment_method' => ['upi', 'cash', 'card'][abs(crc32($inv['invoice_no'])) % 3],
+                    'payment_date' => Carbon::parse($inv['invoice_date'])->addDays(2)->toDateString(),
+                    'reference_no' => 'REF-'.substr(sha1($inv['invoice_no']), 0, 10),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
+
+        // ════════════════════════════════════════════════════════
+        // 14. WAITING LIST / INQUIRIES (registered patient + lead)
+        // ════════════════════════════════════════════════════════
+        $spId = $therapyIds['Speech Therapy'] ?? null;
+        $otId = $therapyIds['Occupational Therapy'] ?? null;
+        $pFirst = $allPatientIds[0] ?? null;
+        if ($spId && $pFirst && ! DB::table('waiting_list')->where('patient_id', $pFirst)->where('therapy_id', $spId)->exists()) {
+            DB::table('waiting_list')->insert([
+                'patient_id' => $pFirst,
+                'contact_name' => null,
+                'contact_phone' => null,
+                'notes' => 'Callback requested — prefers morning slots.',
+                'therapy_id' => $spId,
+                'requested_date' => Carbon::today()->addDays(10)->toDateString(),
+                'priority' => 2,
+                'status' => 'waiting',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
+        if ($otId && ! DB::table('waiting_list')->where('contact_phone', '9880099900')->exists()) {
+            DB::table('waiting_list')->insert([
+                'patient_id' => null,
+                'contact_name' => 'Rohan Kapoor',
+                'contact_phone' => '9880099900',
+                'notes' => 'Website enquiry — OT evaluation for age 4.',
+                'therapy_id' => $otId,
+                'requested_date' => Carbon::today()->addDays(7)->toDateString(),
+                'priority' => 1,
+                'status' => 'waiting',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
     }
 }

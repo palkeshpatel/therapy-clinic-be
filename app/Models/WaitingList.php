@@ -10,6 +10,9 @@ class WaitingList extends Model
 
     protected $fillable = [
         'patient_id',
+        'contact_name',
+        'contact_phone',
+        'notes',
         'therapy_id',
         'requested_date',
         'priority',

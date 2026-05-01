@@ -146,12 +146,13 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->post('salary/payroll/{id}/pay', 'Api\\V1\\PayrollController@pay');
     });
 
-    // Scheduling
+    // Scheduling — therapists may PUT own bookings (start/end) via controller checks
     $router->group(['middleware' => ['auth', 'role:Admin,Staff,Therapist']], function () use ($router) {
         $router->get('time-slots', 'Api\\V1\\TimeSlotController@index');
         $router->get('scheduling/daily', 'Api\\V1\\SchedulingController@daily');
         $router->get('scheduling/availability', 'Api\\V1\\SchedulingController@availability');
         $router->get('waiting-list', 'Api\\V1\\WaitingListController@index');
+        $router->put('scheduling/daily/{id}', 'Api\\V1\\SchedulingController@update');
     });
     $router->group(['middleware' => ['auth', 'role:Admin,Staff']], function () use ($router) {
         $router->post('time-slots', 'Api\\V1\\TimeSlotController@store');
@@ -159,7 +160,6 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->delete('time-slots/{id}', 'Api\\V1\\TimeSlotController@destroy');
 
         $router->post('scheduling/daily', 'Api\\V1\\SchedulingController@book');
-        $router->put('scheduling/daily/{id}', 'Api\\V1\\SchedulingController@update');
         $router->delete('scheduling/daily/{id}', 'Api\\V1\\SchedulingController@cancel');
 
         $router->post('waiting-list', 'Api\\V1\\WaitingListController@store');
@@ -167,13 +167,13 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->delete('waiting-list/{id}', 'Api\\V1\\WaitingListController@destroy');
     });
 
-    // Sessions
+    // Sessions — therapists may POST completed/absent/cancelled for own sessions (controller checks)
     $router->group(['middleware' => ['auth', 'role:Admin,Staff,Therapist']], function () use ($router) {
         $router->get('sessions', 'Api\\V1\\SessionController@index');
         $router->get('sessions/{id}', 'Api\\V1\\SessionController@show');
+        $router->post('sessions', 'Api\\V1\\SessionController@store');
     });
     $router->group(['middleware' => ['auth', 'role:Admin,Staff']], function () use ($router) {
-        $router->post('sessions', 'Api\\V1\\SessionController@store');
         $router->put('sessions/{id}', 'Api\\V1\\SessionController@update');
         $router->delete('sessions/{id}', 'Api\\V1\\SessionController@destroy');
     });

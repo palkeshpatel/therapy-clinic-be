@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Patient;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +17,15 @@ class PatientController extends Controller
         $perPage = (int) ($request->input('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
-        $query = Patient::query();
+        $therapyPick = '(SELECT th.therapy_name FROM patient_therapies pt '
+            .'INNER JOIN therapies th ON th.id = pt.therapy_id '
+            .'WHERE pt.patient_id = patients.id ORDER BY pt.id ASC LIMIT 1)';
+
+        $query = Patient::query()
+            ->select('patients.*')
+            ->selectRaw('('.$therapyPick.') as primary_therapy_name')
+            ->withCount(['sessions as sessions_count'])
+            ->withMax('sessions as last_session_date', 'session_date');
 
         if ($search = trim((string) $request->input('search', ''))) {
             $query->where(function ($q) use ($search) {
@@ -26,8 +35,16 @@ class PatientController extends Controller
             });
         }
 
-        if ($status = $request->input('status')) {
-            $query->where('status', $status);
+        $allowedStatuses = ['active', 'inactive', 'discharged'];
+        if ($request->filled('status')) {
+            $raw = $request->input('status');
+            $statuses = is_array($raw)
+                ? $raw
+                : array_filter(array_map('trim', explode(',', (string) $raw)));
+            $statuses = array_values(array_intersect($statuses, $allowedStatuses));
+            if (count($statuses) > 0) {
+                $query->whereIn('status', $statuses);
+            }
         }
 
         $sortBy = (string) $request->input('sort_by', 'created_at');
@@ -38,7 +55,22 @@ class PatientController extends Controller
         }
         $query->orderBy($sortBy, $sortDir);
 
-        return ApiResponse::paginate($query->paginate($perPage), 'OK');
+        $extraMeta = [];
+        if ($request->boolean('include_stats')) {
+            $extraMeta['stats'] = [
+                'total' => Patient::query()->count(),
+                'active' => Patient::query()->where('status', 'active')->count(),
+                'inactive' => Patient::query()->where('status', 'inactive')->count(),
+                'discharged' => Patient::query()->where('status', 'discharged')->count(),
+                'new_this_month' => Patient::query()
+                    ->whereYear('created_at', Carbon::now()->year)
+                    ->whereMonth('created_at', Carbon::now()->month)
+                    ->count(),
+                'on_hold' => Patient::query()->where('status', 'inactive')->count(),
+            ];
+        }
+
+        return ApiResponse::paginate($query->paginate($perPage), 'OK', $extraMeta);
     }
 
     public function store(Request $request)
@@ -51,7 +83,7 @@ class PatientController extends Controller
                 'dob' => ['nullable', 'date'],
                 'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
                 'address' => ['nullable', 'string'],
-                'status' => ['nullable', Rule::in(['active', 'inactive', 'return'])],
+                'status' => ['nullable', Rule::in(['active', 'inactive', 'discharged'])],
             ]);
 
             $patient = Patient::create($request->only([
@@ -88,7 +120,7 @@ class PatientController extends Controller
                 'dob' => ['sometimes', 'nullable', 'date'],
                 'gender' => ['sometimes', 'nullable', Rule::in(['male', 'female', 'other'])],
                 'address' => ['sometimes', 'nullable', 'string'],
-                'status' => ['sometimes', 'required', Rule::in(['active', 'inactive', 'return'])],
+                'status' => ['sometimes', 'required', Rule::in(['active', 'inactive', 'discharged'])],
             ]);
 
             $patient->fill($request->only([

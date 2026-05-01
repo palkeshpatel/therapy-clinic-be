@@ -6,8 +6,10 @@ use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\DailySchedule;
 use App\Models\TherapySession;
+use App\Models\Therapist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -56,6 +58,15 @@ class SessionController extends Controller
                 'status' => ['required', Rule::in(['completed', 'absent', 'cancelled'])],
                 'notes' => ['nullable', 'string'],
             ]);
+
+            $user = Auth::user();
+            $user?->loadMissing('role');
+            if ($user && ($user->role?->role_name === 'Therapist')) {
+                $myTherapistId = Therapist::query()->where('user_id', $user->id)->value('id');
+                if (! $myTherapistId || (int) $request->input('therapist_id') !== (int) $myTherapistId) {
+                    return ApiResponse::error('Forbidden', 403);
+                }
+            }
 
             $row = TherapySession::create($request->only([
                 'patient_id',

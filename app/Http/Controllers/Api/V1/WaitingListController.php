@@ -34,16 +34,28 @@ class WaitingListController extends Controller
     {
         try {
             $this->validate($request, [
-                'patient_id' => ['required', 'integer', 'exists:patients,id'],
+                'patient_id' => ['nullable', 'integer', 'exists:patients,id'],
+                'contact_name' => ['required_without:patient_id', 'nullable', 'string', 'max:150'],
+                'contact_phone' => ['required_without:patient_id', 'nullable', 'string', 'max:20'],
+                'notes' => ['nullable', 'string'],
                 'therapy_id' => ['required', 'integer', 'exists:therapies,id'],
                 'requested_date' => ['required', 'date'],
                 'priority' => ['nullable', 'integer', 'min:0'],
                 'status' => ['nullable', Rule::in(['waiting', 'scheduled', 'cancelled'])],
             ]);
 
-            $row = WaitingList::create($request->only([
-                'patient_id', 'therapy_id', 'requested_date', 'priority', 'status',
-            ]));
+            $patientId = $request->input('patient_id') ? (int) $request->input('patient_id') : null;
+
+            $row = WaitingList::create([
+                'patient_id' => $patientId,
+                'contact_name' => $patientId ? null : trim((string) $request->input('contact_name')),
+                'contact_phone' => $patientId ? null : trim((string) $request->input('contact_phone')),
+                'notes' => $request->input('notes'),
+                'therapy_id' => (int) $request->input('therapy_id'),
+                'requested_date' => $request->input('requested_date'),
+                'priority' => (int) ($request->input('priority', 0)),
+                'status' => $request->input('status', 'waiting'),
+            ]);
             $row->load(['patient', 'therapy']);
 
             return ApiResponse::success($row, 'Added to waiting list', 201);

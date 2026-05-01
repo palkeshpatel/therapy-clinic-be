@@ -15,7 +15,7 @@ return new class extends Migration
             $table->unsignedBigInteger('patient_id');
             $table->unsignedBigInteger('therapist_id');
             $table->unsignedBigInteger('therapy_id')->nullable();
-            $table->enum('status', ['scheduled', 'completed', 'cancelled'])->default('scheduled');
+            $table->enum('status', ['scheduled', 'in_progress', 'completed', 'cancelled'])->default('scheduled');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamps();
 

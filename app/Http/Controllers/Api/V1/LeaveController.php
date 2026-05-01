@@ -13,6 +13,9 @@ class LeaveController extends Controller
 {
     public function index(Request $request)
     {
+        $perPage = (int) ($request->input('per_page', 15));
+        $perPage = max(1, min(100, $perPage));
+
         $query = TherapistLeave::query()->with('therapist');
 
         if ($therapistId = $request->input('therapist_id')) {
@@ -30,7 +33,7 @@ class LeaveController extends Controller
 
         $query->orderByDesc('leave_date')->orderByDesc('id');
 
-        return ApiResponse::success($query->get(), 'OK');
+        return ApiResponse::paginate($query->paginate($perPage), 'OK');
     }
 
     public function store(Request $request)

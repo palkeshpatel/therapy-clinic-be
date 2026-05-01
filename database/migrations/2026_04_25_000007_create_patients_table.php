@@ -16,7 +16,7 @@ return new class extends Migration
             $table->date('dob')->nullable();
             $table->enum('gender', ['male', 'female', 'other'])->nullable();
             $table->text('address')->nullable();
-            $table->enum('status', ['active', 'inactive', 'return'])->default('active');
+            $table->enum('status', ['active', 'inactive', 'discharged'])->default('active');
             $table->timestamps();
             $table->softDeletes();
         });

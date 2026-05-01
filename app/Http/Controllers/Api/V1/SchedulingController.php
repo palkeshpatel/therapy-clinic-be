@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\DailySchedule;
+use App\Models\Therapist;
 use App\Models\TherapistSchedule;
 use App\Models\TimeSlot;
 use Illuminate\Http\Request;
@@ -68,13 +69,52 @@ class SchedulingController extends Controller
         }
 
         try {
+            $user = Auth::user();
+            $user?->loadMissing('role');
+            $roleName = $user?->role?->role_name;
+
+            // Therapist: only own rows, only status → in_progress | completed
+            if ($roleName === 'Therapist') {
+                $myTherapistId = Therapist::query()->where('user_id', $user->id)->value('id');
+                if (! $myTherapistId || (int) $row->therapist_id !== (int) $myTherapistId) {
+                    return ApiResponse::error('Forbidden', 403);
+                }
+
+                $this->validate($request, [
+                    'status' => ['required', Rule::in(['in_progress', 'completed'])],
+                ]);
+                $next = (string) $request->input('status');
+
+                if ($next === 'in_progress') {
+                    if ($row->status !== 'scheduled') {
+                        return ApiResponse::error('Only scheduled bookings can be started', 422);
+                    }
+                }
+                if ($next === 'completed') {
+                    if ($row->status === 'completed') {
+                        $row->load(['slot', 'patient', 'therapist', 'therapy']);
+
+                        return ApiResponse::success($row, 'Updated');
+                    }
+                    if (! in_array($row->status, ['scheduled', 'in_progress'], true)) {
+                        return ApiResponse::error('Invalid status transition', 422);
+                    }
+                }
+
+                $row->status = $next;
+                $row->save();
+                $row->load(['slot', 'patient', 'therapist', 'therapy']);
+
+                return ApiResponse::success($row, 'Updated');
+            }
+
             $this->validate($request, [
                 'date' => ['sometimes', 'required', 'date'],
                 'slot_id' => ['sometimes', 'required', 'integer', 'exists:time_slots,id'],
                 'patient_id' => ['sometimes', 'required', 'integer', 'exists:patients,id'],
                 'therapist_id' => ['sometimes', 'required', 'integer', 'exists:therapists,id'],
                 'therapy_id' => ['sometimes', 'nullable', 'integer', 'exists:therapies,id'],
-                'status' => ['sometimes', 'required', Rule::in(['scheduled', 'completed', 'cancelled'])],
+                'status' => ['sometimes', 'required', Rule::in(['scheduled', 'in_progress', 'completed', 'cancelled'])],
             ]);
 
             $row->fill($request->only(['date', 'slot_id', 'patient_id', 'therapist_id', 'therapy_id', 'status']));
@@ -127,7 +167,7 @@ class SchedulingController extends Controller
             $booked = DailySchedule::query()
                 ->where('therapist_id', $therapistId)
                 ->whereDate('date', $date)
-                ->whereIn('status', ['scheduled', 'completed'])
+                ->whereIn('status', ['scheduled', 'in_progress', 'completed'])
                 ->pluck('slot_id')
                 ->all();
 

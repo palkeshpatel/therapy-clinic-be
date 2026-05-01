@@ -13,6 +13,9 @@ class AttendanceController extends Controller
 {
     public function index(Request $request)
     {
+        $perPage = (int) ($request->input('per_page', 15));
+        $perPage = max(1, min(100, $perPage));
+
         $query = TherapistAttendance::query()->with('therapist');
 
         if ($therapistId = $request->input('therapist_id')) {
@@ -28,7 +31,7 @@ class AttendanceController extends Controller
 
         $query->orderByDesc('date')->orderByDesc('id');
 
-        return ApiResponse::success($query->get(), 'OK');
+        return ApiResponse::paginate($query->paginate($perPage), 'OK');
     }
 
     public function today()

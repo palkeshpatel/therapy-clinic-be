@@ -35,18 +35,18 @@ class ApiResponse
         return response()->json($payload, $status);
     }
 
-    public static function paginate($paginator, string $message = 'OK'): JsonResponse
+    /**
+     * @param  \Illuminate\Contracts\Pagination\LengthAwarePaginator  $paginator
+     */
+    public static function paginate($paginator, string $message = 'OK', array $extraMeta = []): JsonResponse
     {
-        return self::success(
-            $paginator->items(),
-            $message,
-            200,
-            [
-                'page'     => $paginator->currentPage(),
-                'per_page' => $paginator->perPage(),
-                'total'    => $paginator->total(),
-                'last_page'=> $paginator->lastPage(),
-            ]
-        );
+        $meta = array_merge([
+            'page'      => $paginator->currentPage(),
+            'per_page'  => $paginator->perPage(),
+            'total'     => $paginator->total(),
+            'last_page' => $paginator->lastPage(),
+        ], $extraMeta);
+
+        return self::success($paginator->items(), $message, 200, $meta);
     }
 }
