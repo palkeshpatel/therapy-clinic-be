@@ -112,19 +112,26 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->delete('therapists/{id}/documents/{docId}', 'Api\\V1\\TherapistDocumentController@destroy');
     });
 
-    // Attendance + Leaves (Admin/Staff full access, Therapist view+apply for self handled later)
+    // Attendance + Leaves
+    // Therapist can view, check-in, check-out, apply leave, and cancel own leave.
+    // Approve/reject leave is Admin/Staff only.
     $router->group(['middleware' => ['auth', 'role:Admin,Staff,Therapist']], function () use ($router) {
-        $router->get('attendance', 'Api\\V1\\AttendanceController@index');
-        $router->get('attendance/today', 'Api\\V1\\AttendanceController@today');
-        $router->get('leaves', 'Api\\V1\\LeaveController@index');
+        $router->get('attendance',       'Api\V1\AttendanceController@index');
+        $router->get('attendance/today', 'Api\V1\AttendanceController@today');
+
+        // Therapist punches in/out for themselves
+        $router->post('attendance/check-in',  'Api\V1\AttendanceController@checkIn');
+        $router->post('attendance/check-out', 'Api\V1\AttendanceController@checkOut');
+
+        $router->get('leaves',           'Api\V1\LeaveController@index');
+
+        // Therapist can apply and cancel their own leave
+        $router->post('leaves',          'Api\V1\LeaveController@store');
+        $router->delete('leaves/{id}',   'Api\V1\LeaveController@destroy');
     });
     $router->group(['middleware' => ['auth', 'role:Admin,Staff']], function () use ($router) {
-        $router->post('attendance/check-in', 'Api\\V1\\AttendanceController@checkIn');
-        $router->post('attendance/check-out', 'Api\\V1\\AttendanceController@checkOut');
-
-        $router->post('leaves', 'Api\\V1\\LeaveController@store');
-        $router->put('leaves/{id}', 'Api\\V1\\LeaveController@update');
-        $router->delete('leaves/{id}', 'Api\\V1\\LeaveController@destroy');
+        // Only Admin/Staff can approve or reject leaves
+        $router->put('leaves/{id}', 'Api\V1\LeaveController@update');
     });
 
     // Salary + Payroll (Admin)
