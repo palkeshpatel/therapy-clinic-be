@@ -49,10 +49,10 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->get('permissions', 'Api\\V1\\PermissionController@index');
     });
 
-    // Clinic (Admin can edit, Staff can view)
-    $router->group(['middleware' => ['auth', 'role:Admin,Staff']], function () use ($router) {
-        $router->get('clinic', 'Api\\V1\\ClinicController@show');
-        $router->get('clinic/settings', 'Api\\V1\\ClinicSettingController@index');
+    // Clinic — READ: Admin + Staff + Therapist (Therapist needs settings for geofence check)
+    $router->group(['middleware' => ['auth', 'role:Admin,Staff,Therapist']], function () use ($router) {
+        $router->get('clinic', 'Api\V1\ClinicController@show');
+        $router->get('clinic/settings', 'Api\V1\ClinicSettingController@index');
     });
     $router->group(['middleware' => ['auth', 'role:Admin']], function () use ($router) {
         $router->put('clinic', 'Api\\V1\\ClinicController@update');
