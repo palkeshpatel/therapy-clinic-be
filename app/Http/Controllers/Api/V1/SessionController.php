@@ -21,6 +21,10 @@ class SessionController extends Controller
         $perPage = max(1, min(100, $perPage));
 
         $query = TherapySession::query()->with(['patient', 'therapist', 'therapy', 'slot']);
+        $myTherapistId = $this->myTherapistIdIfTherapist();
+        if ($myTherapistId) {
+            $query->where('therapist_id', $myTherapistId);
+        }
 
         if ($patientId = $request->input('patient_id')) {
             $query->where('patient_id', $patientId);
@@ -49,34 +53,47 @@ class SessionController extends Controller
     public function store(Request $request)
     {
         try {
-            $this->validate($request, [
-                'patient_id' => ['required', 'integer', 'exists:patients,id'],
-                'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
-                'therapy_id' => ['required', 'integer', 'exists:therapies,id'],
-                'slot_id' => ['nullable', 'integer', 'exists:time_slots,id'],
-                'session_date' => ['required', 'date'],
-                'status' => ['required', Rule::in(['completed', 'absent', 'cancelled'])],
-                'notes' => ['nullable', 'string'],
-            ]);
-
-            $user = Auth::user();
-            $user?->loadMissing('role');
-            if ($user && ($user->role?->role_name === 'Therapist')) {
-                $myTherapistId = Therapist::query()->where('user_id', $user->id)->value('id');
-                if (! $myTherapistId || (int) $request->input('therapist_id') !== (int) $myTherapistId) {
-                    return ApiResponse::error('Forbidden', 403);
-                }
+            $myTherapistId = $this->myTherapistIdIfTherapist();
+            if ($myTherapistId) {
+                $this->validate($request, [
+                    'patient_id' => ['required', 'integer', 'exists:patients,id'],
+                    'therapy_id' => ['required', 'integer', 'exists:therapies,id'],
+                    'slot_id' => ['nullable', 'integer', 'exists:time_slots,id'],
+                    'session_date' => ['required', 'date'],
+                    'start_time' => ['nullable', 'date_format:H:i'],
+                    'end_time' => ['nullable', 'date_format:H:i'],
+                    'duration' => ['nullable', 'string', 'max:20'],
+                    'status' => ['required', Rule::in(['completed', 'absent', 'cancelled'])],
+                    'notes' => ['nullable', 'string'],
+                ]);
+            } else {
+                $this->validate($request, [
+                    'patient_id' => ['required', 'integer', 'exists:patients,id'],
+                    'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
+                    'therapy_id' => ['required', 'integer', 'exists:therapies,id'],
+                    'slot_id' => ['nullable', 'integer', 'exists:time_slots,id'],
+                    'session_date' => ['required', 'date'],
+                    'start_time' => ['nullable', 'date_format:H:i'],
+                    'end_time' => ['nullable', 'date_format:H:i'],
+                    'duration' => ['nullable', 'string', 'max:20'],
+                    'status' => ['required', Rule::in(['completed', 'absent', 'cancelled'])],
+                    'notes' => ['nullable', 'string'],
+                ]);
             }
+
+            $therapistId = $myTherapistId ?: (int) $request->input('therapist_id');
 
             $row = TherapySession::create($request->only([
                 'patient_id',
-                'therapist_id',
                 'therapy_id',
                 'slot_id',
                 'session_date',
+                'start_time',
+                'end_time',
+                'duration',
                 'status',
                 'notes',
-            ]));
+            ]) + ['therapist_id' => $therapistId]);
 
             $this->syncDailyScheduleStatus($row);
             $row->load(['patient', 'therapist', 'therapy', 'slot']);
@@ -92,6 +109,10 @@ class SessionController extends Controller
         $row = TherapySession::with(['patient', 'therapist', 'therapy', 'slot'])->find($id);
         if (! $row) {
             return ApiResponse::error('Session not found', 404);
+        }
+        $myTherapistId = $this->myTherapistIdIfTherapist();
+        if ($myTherapistId && (int) $row->therapist_id !== (int) $myTherapistId) {
+            return ApiResponse::error('Forbidden', 403);
         }
         return ApiResponse::success($row, 'OK');
     }
@@ -110,6 +131,9 @@ class SessionController extends Controller
                 'therapy_id' => ['sometimes', 'required', 'integer', 'exists:therapies,id'],
                 'slot_id' => ['sometimes', 'nullable', 'integer', 'exists:time_slots,id'],
                 'session_date' => ['sometimes', 'required', 'date'],
+                'start_time' => ['sometimes', 'nullable', 'date_format:H:i'],
+                'end_time' => ['sometimes', 'nullable', 'date_format:H:i'],
+                'duration' => ['sometimes', 'nullable', 'string', 'max:20'],
                 'status' => ['sometimes', 'required', Rule::in(['completed', 'absent', 'cancelled'])],
                 'notes' => ['sometimes', 'nullable', 'string'],
             ]);
@@ -120,6 +144,9 @@ class SessionController extends Controller
                 'therapy_id',
                 'slot_id',
                 'session_date',
+                'start_time',
+                'end_time',
+                'duration',
                 'status',
                 'notes',
             ]));
@@ -171,6 +198,20 @@ class SessionController extends Controller
             $booking->status = 'cancelled';
             $booking->save();
         }
+    }
+
+    private function myTherapistIdIfTherapist(): ?int
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return null;
+        }
+        $user->loadMissing('role');
+        if (($user->role?->role_type ?? null) !== 'therapist') {
+            return null;
+        }
+
+        return Therapist::query()->where('user_id', $user->id)->value('id');
     }
 }
 

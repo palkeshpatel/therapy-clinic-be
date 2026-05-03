@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DailySchedule;
 use App\Models\Therapist;
 use App\Models\TherapistSchedule;
+use App\Models\TherapySession;
 use App\Models\TimeSlot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -22,12 +23,17 @@ class SchedulingController extends Controller
 
         $query = DailySchedule::query()->with(['slot', 'patient', 'therapist', 'therapy']);
         $query->whereDate('date', $date)->orderBy('slot_id');
+        $myTherapistId = $this->myTherapistIdIfTherapist();
 
-        if ($therapistId = $request->input('therapist_id')) {
+        if ($myTherapistId) {
+            $query->where('therapist_id', $myTherapistId);
+        } elseif ($therapistId = $request->input('therapist_id')) {
             $query->where('therapist_id', $therapistId);
         }
 
-        return ApiResponse::success($query->get(), 'OK');
+        $rows = $query->get();
+
+        return ApiResponse::success($this->attachSessionTimes($rows, $date), 'OK');
     }
 
     public function book(Request $request)
@@ -71,10 +77,10 @@ class SchedulingController extends Controller
         try {
             $user = Auth::user();
             $user?->loadMissing('role');
-            $roleName = $user?->role?->role_name;
+            $roleType = $user?->role?->role_type;
 
             // Therapist: only own rows, only status → in_progress | completed
-            if ($roleName === 'Therapist') {
+            if ($roleType === 'therapist') {
                 $myTherapistId = Therapist::query()->where('user_id', $user->id)->value('id');
                 if (! $myTherapistId || (int) $row->therapist_id !== (int) $myTherapistId) {
                     return ApiResponse::error('Forbidden', 403);
@@ -145,13 +151,20 @@ class SchedulingController extends Controller
     public function availability(Request $request)
     {
         try {
-            $this->validate($request, [
-                'date' => ['required', 'date'],
-                'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
-            ]);
+            $myTherapistId = $this->myTherapistIdIfTherapist();
+            if ($myTherapistId) {
+                $this->validate($request, [
+                    'date' => ['required', 'date'],
+                ]);
+            } else {
+                $this->validate($request, [
+                    'date' => ['required', 'date'],
+                    'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
+                ]);
+            }
 
             $date = (string) $request->input('date');
-            $therapistId = (int) $request->input('therapist_id');
+            $therapistId = $myTherapistId ?: (int) $request->input('therapist_id');
 
             $allSlots = TimeSlot::query()->where('is_active', true)->orderBy('start_time')->get();
 
@@ -179,6 +192,36 @@ class SchedulingController extends Controller
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
         }
+    }
+
+    private function myTherapistIdIfTherapist(): ?int
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return null;
+        }
+        $user->loadMissing('role');
+        if (($user->role?->role_type ?? null) !== 'therapist') {
+            return null;
+        }
+
+        return Therapist::query()->where('user_id', $user->id)->value('id');
+    }
+
+    private function attachSessionTimes($rows, string $date)
+    {
+        $sessions = TherapySession::query()
+            ->whereDate('session_date', $date)
+            ->get()
+            ->groupBy(fn ($session) => $session->therapist_id.'-'.$session->slot_id);
+
+        return $rows->map(function ($row) use ($sessions) {
+            $session = $sessions->get($row->therapist_id.'-'.$row->slot_id)?->first();
+            $row->setAttribute('start_time', $session->start_time ?? null);
+            $row->setAttribute('end_time', $session->end_time ?? null);
+            $row->setAttribute('duration', $session->duration ?? null);
+            return $row;
+        });
     }
 }
 

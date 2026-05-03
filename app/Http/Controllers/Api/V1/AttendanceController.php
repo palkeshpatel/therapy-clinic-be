@@ -11,6 +11,7 @@ use App\Models\TherapistLeave;
 use Illuminate\Http\Request;
 use Illuminate\Support\CarbonPeriod;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class AttendanceController extends Controller
@@ -21,6 +22,10 @@ class AttendanceController extends Controller
         $perPage = max(1, min(100, $perPage));
 
         $query = TherapistAttendance::query()->with('therapist');
+        $myTherapistId = $this->myTherapistIdIfTherapist();
+        if ($myTherapistId) {
+            $query->where('therapist_id', $myTherapistId);
+        }
 
         if ($month = $request->input('month')) {
             $start = Carbon::createFromFormat('Y-m', (string) $month)->startOfMonth()->toDateString();
@@ -28,7 +33,7 @@ class AttendanceController extends Controller
             $query->whereBetween('date', [$start, $end]);
         }
 
-        if ($therapistId = $request->input('therapist_id')) {
+        if (! $myTherapistId && ($therapistId = $request->input('therapist_id'))) {
             $query->where('therapist_id', $therapistId);
         }
 
@@ -51,6 +56,7 @@ class AttendanceController extends Controller
         $rows = TherapistAttendance::query()
             ->with('therapist')
             ->whereDate('date', $today)
+            ->when($this->myTherapistIdIfTherapist(), fn ($q, $id) => $q->where('therapist_id', $id))
             ->orderBy('therapist_id')
             ->get();
 
@@ -125,14 +131,18 @@ class AttendanceController extends Controller
     public function checkIn(Request $request)
     {
         try {
-            $this->validate($request, [
-                'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
-            ]);
+            $myTherapistId = $this->myTherapistIdIfTherapist();
+            if (! $myTherapistId) {
+                $this->validate($request, [
+                    'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
+                ]);
+            }
 
             $today = Carbon::today()->toDateString();
+            $therapistId = $myTherapistId ?: (int) $request->input('therapist_id');
 
             $row = TherapistAttendance::query()->firstOrNew([
-                'therapist_id' => (int) $request->input('therapist_id'),
+                'therapist_id' => $therapistId,
                 'date' => $today,
             ]);
 
@@ -151,14 +161,18 @@ class AttendanceController extends Controller
     public function checkOut(Request $request)
     {
         try {
-            $this->validate($request, [
-                'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
-            ]);
+            $myTherapistId = $this->myTherapistIdIfTherapist();
+            if (! $myTherapistId) {
+                $this->validate($request, [
+                    'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
+                ]);
+            }
 
             $today = Carbon::today()->toDateString();
+            $therapistId = $myTherapistId ?: (int) $request->input('therapist_id');
 
             $row = TherapistAttendance::query()->firstOrNew([
-                'therapist_id' => (int) $request->input('therapist_id'),
+                'therapist_id' => $therapistId,
                 'date' => $today,
             ]);
 
@@ -173,6 +187,20 @@ class AttendanceController extends Controller
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
         }
+    }
+
+    private function myTherapistIdIfTherapist(): ?int
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return null;
+        }
+        $user->loadMissing('role');
+        if (($user->role?->role_type ?? null) !== 'therapist') {
+            return null;
+        }
+
+        return Therapist::query()->where('user_id', $user->id)->value('id');
     }
 }
 

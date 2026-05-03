@@ -14,6 +14,9 @@ class TherapySession extends Model
         'therapy_id',
         'slot_id',
         'session_date',
+        'start_time',
+        'end_time',
+        'duration',
         'status',
         'notes',
     ];
@@ -24,6 +27,9 @@ class TherapySession extends Model
         'therapy_id' => 'integer',
         'slot_id' => 'integer',
         'session_date' => 'date',
+        'start_time' => 'string',
+        'end_time' => 'string',
+        'duration' => 'string',
     ];
 
     public function patient()

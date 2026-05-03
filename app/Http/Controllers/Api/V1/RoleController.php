@@ -13,7 +13,7 @@ class RoleController extends Controller
 {
     public function index()
     {
-        return ApiResponse::success(Role::query()->withCount('permissions')->orderBy('role_name')->get(), 'OK');
+        return ApiResponse::success(Role::query()->withCount('permissions')->orderBy('role_type')->orderBy('role_name')->get(), 'OK');
     }
 
     public function store(Request $request)
@@ -21,10 +21,15 @@ class RoleController extends Controller
         try {
             $this->validate($request, [
                 'role_name' => ['required', 'string', 'max:50', 'unique:roles,role_name'],
+                'role_type' => ['nullable', 'in:admin,therapist'],
                 'description' => ['nullable', 'string'],
             ]);
 
-            $role = Role::create($request->only(['role_name', 'description']));
+            $payload = $request->only(['role_name', 'description', 'role_type']);
+            if (! isset($payload['role_type'])) {
+                $payload['role_type'] = 'admin';
+            }
+            $role = Role::create($payload);
 
             return ApiResponse::success($role, 'Role created', 201);
         } catch (ValidationException $e) {
@@ -51,10 +56,11 @@ class RoleController extends Controller
         try {
             $this->validate($request, [
                 'role_name' => ['sometimes', 'required', 'string', 'max:50', 'unique:roles,role_name,' . $role->id],
+                'role_type' => ['sometimes', 'required', 'in:admin,therapist'],
                 'description' => ['sometimes', 'nullable', 'string'],
             ]);
 
-            $role->fill($request->only(['role_name', 'description']));
+            $role->fill($request->only(['role_name', 'description', 'role_type']));
             $role->save();
 
             return ApiResponse::success($role, 'Role updated');

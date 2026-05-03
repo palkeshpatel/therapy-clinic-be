@@ -13,15 +13,15 @@ class RolesSeeder extends Seeder
         $now = Carbon::now();
 
         $roles = [
-            ['role_name' => 'Admin',     'description' => 'Full system access'],
-            ['role_name' => 'Therapist', 'description' => 'Therapist with limited access (own data)'],
-            ['role_name' => 'Staff',     'description' => 'Reception/staff with operational access'],
+            ['role_name' => 'Admin',     'role_type' => 'admin',     'description' => 'Full system access'],
+            ['role_name' => 'Therapist', 'role_type' => 'therapist', 'description' => 'Therapist with limited access (own data)'],
+            ['role_name' => 'Receptionist', 'role_type' => 'admin',  'description' => 'Receptionist with operational access'],
         ];
 
         foreach ($roles as $r) {
             DB::table('roles')->updateOrInsert(
                 ['role_name' => $r['role_name']],
-                ['description' => $r['description'], 'created_at' => $now, 'updated_at' => $now]
+                ['role_type' => $r['role_type'], 'description' => $r['description'], 'created_at' => $now, 'updated_at' => $now]
             );
         }
     }

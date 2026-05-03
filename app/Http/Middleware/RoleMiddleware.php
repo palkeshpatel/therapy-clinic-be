@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Auth;
 
 class RoleMiddleware
 {
-    public function handle($request, Closure $next, ...$roles)
+    public function handle($request, Closure $next, ...$roleTypes)
     {
         $user = Auth::user();
 
@@ -17,10 +17,10 @@ class RoleMiddleware
         }
 
         $user->loadMissing('role');
-        $userRole = optional($user->role)->role_name;
+        $userRoleType = optional($user->role)->role_type;
 
-        if (! $userRole || ! in_array($userRole, $roles, true)) {
-            return ApiResponse::error('Forbidden — insufficient role', 403);
+        if (! $userRoleType || ! in_array($userRoleType, $roleTypes, true)) {
+            return ApiResponse::error('Forbidden — insufficient role type', 403);
         }
 
         return $next($request);

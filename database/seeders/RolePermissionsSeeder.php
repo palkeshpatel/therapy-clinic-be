@@ -43,9 +43,9 @@ class RolePermissionsSeeder extends Seeder
             $this->grant($therapistId, $therapistAllowed, $permissions, $now);
         }
 
-        // Staff → operational (no admin/salary/users)
-        $staffId = $roles['Staff'] ?? null;
-        if ($staffId) {
+        // Receptionist → operational (no admin/salary/users)
+        $receptionistId = $roles['Receptionist'] ?? null;
+        if ($receptionistId) {
             $staffAllowed = [
                 'patients' => ['view', 'create', 'edit', 'delete'],
                 'therapies' => ['view'],
@@ -58,7 +58,7 @@ class RolePermissionsSeeder extends Seeder
                 'payments' => ['view', 'create'],
                 'clinic' => ['view'],
             ];
-            $this->grant($staffId, $staffAllowed, $permissions, $now);
+            $this->grant($receptionistId, $staffAllowed, $permissions, $now);
         }
     }
 

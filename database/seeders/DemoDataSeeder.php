@@ -38,7 +38,7 @@ class DemoDataSeeder extends Seeder
         // 2. THERAPIST USERS + THERAPIST PROFILES (7 therapists)
         //    Login: email below / password: therapist123
         // ════════════════════════════════════════════════════════
-        $therapistRoleId = DB::table('roles')->where('role_name', 'Therapist')->value('id');
+        $therapistRoleId = DB::table('roles')->where('role_type', 'therapist')->orderBy('id')->value('id');
 
         $therapistUserData = [
             [
@@ -264,6 +264,31 @@ class DemoDataSeeder extends Seeder
                     'patient_id'  => $patientId,
                     'therapy_id'  => $therapyId,
                     'status'      => $dayOffset === 0 ? 'scheduled' : 'scheduled',
+                    'created_by'  => 1,
+                    'created_at'  => $now,
+                    'updated_at'  => $now,
+                ]
+            );
+        }
+
+        $therapyKeys = array_keys($therapyIds);
+
+        // Guarantee at least one schedule per therapist for today so therapist login never sees an empty board.
+        foreach ($therapistIds as $i => $tid) {
+            $slotId = $slotIds[$i] ?? ($slotIds[0] ?? null);
+            $patientId = $patientIds[$i] ?? ($patientIds[0] ?? null);
+            $therapyName = $therapyKeys[$i % max(count($therapyKeys), 1)] ?? 'Speech Therapy';
+            $therapyId = $therapyIds[$therapyName] ?? null;
+            if (! $slotId || ! $patientId || ! $therapyId) {
+                continue;
+            }
+
+            DB::table('daily_schedule')->updateOrInsert(
+                ['date' => Carbon::today()->toDateString(), 'slot_id' => $slotId, 'therapist_id' => $tid],
+                [
+                    'patient_id'  => $patientId,
+                    'therapy_id'  => $therapyId,
+                    'status'      => 'scheduled',
                     'created_by'  => 1,
                     'created_at'  => $now,
                     'updated_at'  => $now,

@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\Therapist;
 use App\Models\TherapistLeave;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -17,6 +19,10 @@ class LeaveController extends Controller
         $perPage = max(1, min(100, $perPage));
 
         $query = TherapistLeave::query()->with('therapist');
+        $myTherapistId = $this->myTherapistIdIfTherapist();
+        if ($myTherapistId) {
+            $query->where('therapist_id', $myTherapistId);
+        }
 
         if ($month = $request->input('month')) {
             $start = \Illuminate\Support\Carbon::createFromFormat('Y-m', (string) $month)->startOfMonth()->toDateString();
@@ -24,7 +30,7 @@ class LeaveController extends Controller
             $query->whereBetween('leave_date', [$start, $end]);
         }
 
-        if ($therapistId = $request->input('therapist_id')) {
+        if (! $myTherapistId && ($therapistId = $request->input('therapist_id'))) {
             $query->where('therapist_id', $therapistId);
         }
         if ($from = $request->input('from')) {
@@ -45,15 +51,26 @@ class LeaveController extends Controller
     public function store(Request $request)
     {
         try {
-            $this->validate($request, [
-                'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
-                'leave_date' => ['required', 'date'],
-                'leave_type' => ['required', 'string', 'max:50'],
-                'reason' => ['nullable', 'string'],
-            ]);
+            $myTherapistId = $this->myTherapistIdIfTherapist();
+            if ($myTherapistId) {
+                $this->validate($request, [
+                    'leave_date' => ['required', 'date'],
+                    'leave_type' => ['required', 'string', 'max:50'],
+                    'reason' => ['nullable', 'string'],
+                ]);
+            } else {
+                $this->validate($request, [
+                    'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
+                    'leave_date' => ['required', 'date'],
+                    'leave_type' => ['required', 'string', 'max:50'],
+                    'reason' => ['nullable', 'string'],
+                ]);
+            }
+
+            $therapistId = $myTherapistId ?: (int) $request->input('therapist_id');
 
             $leave = TherapistLeave::create([
-                'therapist_id' => (int) $request->input('therapist_id'),
+                'therapist_id' => $therapistId,
                 'leave_date' => $request->input('leave_date'),
                 'leave_type' => (string) $request->input('leave_type'),
                 'reason' => $request->input('reason'),
@@ -96,8 +113,32 @@ class LeaveController extends Controller
             return ApiResponse::error('Leave not found', 404);
         }
 
+        $myTherapistId = $this->myTherapistIdIfTherapist();
+        if ($myTherapistId) {
+            if ((int) $leave->therapist_id !== (int) $myTherapistId) {
+                return ApiResponse::error('Forbidden', 403);
+            }
+            if ((string) $leave->status !== 'pending') {
+                return ApiResponse::error('Only pending leave can be cancelled', 422);
+            }
+        }
+
         $leave->delete();
         return ApiResponse::success(null, 'Leave deleted');
+    }
+
+    private function myTherapistIdIfTherapist(): ?int
+    {
+        $user = Auth::user();
+        if (! $user) {
+            return null;
+        }
+        $user->loadMissing('role');
+        if (($user->role?->role_type ?? null) !== 'therapist') {
+            return null;
+        }
+
+        return Therapist::query()->where('user_id', $user->id)->value('id');
     }
 }
 
