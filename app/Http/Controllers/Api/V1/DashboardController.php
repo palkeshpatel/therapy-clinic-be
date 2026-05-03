@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\DailySchedule;
 use App\Models\Invoice;
 use App\Models\Patient;
-use App\Models\TherapySession;
 use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
@@ -16,7 +16,16 @@ class DashboardController extends Controller
         $today = Carbon::today()->toDateString();
 
         $patients = Patient::query()->count();
-        $todaySessions = TherapySession::query()->whereDate('session_date', $today)->count();
+        $todaySessions = DailySchedule::query()
+            ->whereDate('date', $today)
+            ->where('status', '!=', 'cancelled')
+            ->count();
+        $currentRows = DailySchedule::query()
+            ->with(['slot', 'patient', 'therapist', 'therapy'])
+            ->where('status', 'in_progress')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+        $currentSessions = $currentRows->count();
         $pendingInvoices = Invoice::query()->whereIn('status', ['pending', 'partial'])->count();
 
         // Revenue: sum of payments for current month
@@ -29,6 +38,8 @@ class DashboardController extends Controller
         return ApiResponse::success([
             'patients' => $patients,
             'today_sessions' => $todaySessions,
+            'current_sessions' => $currentSessions,
+            'current_working_sessions' => $currentRows,
             'pending_invoices' => $pendingInvoices,
             'month_revenue' => (string) $revenue,
         ], 'OK');
