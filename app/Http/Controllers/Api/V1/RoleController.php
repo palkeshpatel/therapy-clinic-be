@@ -13,7 +13,7 @@ class RoleController extends Controller
 {
     public function index()
     {
-        return ApiResponse::success(Role::query()->orderBy('role_name')->get(), 'OK');
+        return ApiResponse::success(Role::query()->withCount('permissions')->orderBy('role_name')->get(), 'OK');
     }
 
     public function store(Request $request)
