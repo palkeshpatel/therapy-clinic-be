@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\Holiday;
+use App\Models\Therapist;
 use App\Models\TherapistAttendance;
+use App\Models\TherapistLeave;
 use Illuminate\Http\Request;
+use Illuminate\Support\CarbonPeriod;
 use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
@@ -17,6 +21,12 @@ class AttendanceController extends Controller
         $perPage = max(1, min(100, $perPage));
 
         $query = TherapistAttendance::query()->with('therapist');
+
+        if ($month = $request->input('month')) {
+            $start = Carbon::createFromFormat('Y-m', (string) $month)->startOfMonth()->toDateString();
+            $end = Carbon::createFromFormat('Y-m', (string) $month)->endOfMonth()->toDateString();
+            $query->whereBetween('date', [$start, $end]);
+        }
 
         if ($therapistId = $request->input('therapist_id')) {
             $query->where('therapist_id', $therapistId);
@@ -45,6 +55,71 @@ class AttendanceController extends Controller
             ->get();
 
         return ApiResponse::success($rows, 'OK');
+    }
+
+    public function summary(Request $request)
+    {
+        $month = (string) $request->input('month', Carbon::now()->format('Y-m'));
+        $start = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+        $end = $start->copy()->endOfMonth();
+
+        $holidays = Holiday::query()
+            ->where('status', 'active')
+            ->whereBetween('holiday_date', [$start->toDateString(), $end->toDateString()])
+            ->orderBy('holiday_date')
+            ->get();
+
+        $holidayDates = $holidays->pluck('holiday_date')->map(fn ($date) => Carbon::parse($date)->toDateString())->all();
+        $businessDays = collect(CarbonPeriod::create($start, $end))
+            ->filter(fn ($date) => $date->isWeekday())
+            ->count();
+
+        $therapists = Therapist::query()
+            ->where('status', 'active')
+            ->with(['attendance' => function ($query) use ($start, $end) {
+                $query->whereBetween('date', [$start->toDateString(), $end->toDateString()]);
+            }, 'leaves' => function ($query) use ($start, $end) {
+                $query->where('status', 'approved')->whereBetween('leave_date', [$start->toDateString(), $end->toDateString()]);
+            }])
+            ->orderBy('name')
+            ->get()
+            ->map(function ($therapist) use ($businessDays, $holidayDates) {
+                $presentDays = $therapist->attendance->whereNotNull('check_in')->count();
+                $leaveDays = $therapist->leaves->count();
+                $holidayDays = count($holidayDates);
+                $availableDays = max(0, $businessDays - $holidayDays);
+                $absentDays = max(0, $availableDays - $presentDays - $leaveDays);
+
+                return [
+                    'id' => $therapist->id,
+                    'name' => $therapist->name,
+                    'specialization' => $therapist->specialization,
+                    'present_days' => $presentDays,
+                    'leave_days' => $leaveDays,
+                    'holiday_days' => $holidayDays,
+                    'absent_days' => $absentDays,
+                    'working_days' => $availableDays,
+                    'attendance' => $therapist->attendance->map(function ($row) {
+                        return [
+                            'id' => $row->id,
+                            'date' => Carbon::parse($row->date)->toDateString(),
+                            'check_in' => optional($row->check_in)?->toDateTimeString(),
+                            'check_out' => optional($row->check_out)?->toDateTimeString(),
+                            'status' => $row->check_out ? 'present' : ($row->check_in ? 'checked-in' : 'absent'),
+                        ];
+                    })->values(),
+                ];
+            });
+
+        return ApiResponse::success([
+            'month' => $month,
+            'start' => $start->toDateString(),
+            'end' => $end->toDateString(),
+            'business_days' => $businessDays,
+            'holiday_count' => $holidays->count(),
+            'holidays' => $holidays,
+            'therapists' => $therapists,
+        ], 'OK');
     }
 
     public function checkIn(Request $request)

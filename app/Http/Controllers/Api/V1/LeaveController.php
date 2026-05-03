@@ -18,6 +18,12 @@ class LeaveController extends Controller
 
         $query = TherapistLeave::query()->with('therapist');
 
+        if ($month = $request->input('month')) {
+            $start = \Illuminate\Support\Carbon::createFromFormat('Y-m', (string) $month)->startOfMonth()->toDateString();
+            $end = \Illuminate\Support\Carbon::createFromFormat('Y-m', (string) $month)->endOfMonth()->toDateString();
+            $query->whereBetween('leave_date', [$start, $end]);
+        }
+
         if ($therapistId = $request->input('therapist_id')) {
             $query->where('therapist_id', $therapistId);
         }

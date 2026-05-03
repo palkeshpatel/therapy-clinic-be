@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             ClinicSeeder::class,
             TimeSlotsSeeder::class,
+            HolidaySeeder::class,
             DemoDataSeeder::class,
         ]);
     }

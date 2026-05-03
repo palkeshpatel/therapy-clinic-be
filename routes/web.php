@@ -47,6 +47,16 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
 
         // Permissions
         $router->get('permissions', 'Api\\V1\\PermissionController@index');
+
+        // Holidays
+        $router->get('holidays', 'Api\\V1\\HolidayController@index');
+        $router->post('holidays/generate-year', 'Api\\V1\\HolidayController@generateYear');
+        $router->post('holidays', 'Api\\V1\\HolidayController@store');
+        $router->put('holidays/{id}', 'Api\\V1\\HolidayController@update');
+        $router->delete('holidays/{id}', 'Api\\V1\\HolidayController@destroy');
+
+        // Attendance summary
+        $router->get('attendance/summary', 'Api\\V1\\AttendanceController@summary');
     });
 
     // Clinic — READ: Admin + Staff + Therapist (Therapist needs settings for geofence check)

@@ -12,9 +12,15 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('therapist_id');
             $table->date('month');
+            $table->integer('present_days')->default(0);
+            $table->integer('leave_days')->default(0);
+            $table->integer('holiday_days')->default(0);
+            $table->integer('absent_days')->default(0);
             $table->integer('total_sessions')->default(0);
             $table->integer('overtime_sessions')->default(0);
             $table->decimal('salary_amount', 10, 2)->default(0);
+            $table->decimal('deduction_amount', 10, 2)->default(0);
+            $table->decimal('net_salary', 10, 2)->default(0);
             $table->timestamp('paid_at')->nullable();
             $table->timestamps();
 

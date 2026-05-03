@@ -54,12 +54,28 @@ class PayrollController extends Controller
 
         try {
             $this->validate($request, [
+                'present_days' => ['sometimes', 'required', 'integer', 'min:0'],
+                'leave_days' => ['sometimes', 'required', 'integer', 'min:0'],
+                'holiday_days' => ['sometimes', 'required', 'integer', 'min:0'],
+                'absent_days' => ['sometimes', 'required', 'integer', 'min:0'],
                 'total_sessions' => ['sometimes', 'required', 'integer', 'min:0'],
                 'overtime_sessions' => ['sometimes', 'required', 'integer', 'min:0'],
                 'salary_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+                'deduction_amount' => ['sometimes', 'required', 'numeric', 'min:0'],
+                'net_salary' => ['sometimes', 'required', 'numeric', 'min:0'],
             ]);
 
-            $row->fill($request->only(['total_sessions', 'overtime_sessions', 'salary_amount']));
+            $row->fill($request->only([
+                'present_days',
+                'leave_days',
+                'holiday_days',
+                'absent_days',
+                'total_sessions',
+                'overtime_sessions',
+                'salary_amount',
+                'deduction_amount',
+                'net_salary',
+            ]));
             $row->save();
             $row->load('therapist');
 
