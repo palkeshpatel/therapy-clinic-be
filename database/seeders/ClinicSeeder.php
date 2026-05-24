@@ -12,11 +12,11 @@ class ClinicSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        $clinicId = DB::table('clinics')->where('clinic_name', 'Lumina Care Therapy Clinic')->value('id');
+        $clinicId = DB::table('clinics')->where('clinic_name', 'HH therapydesk Therapy Clinic')->value('id');
 
         if (! $clinicId) {
             $clinicId = DB::table('clinics')->insertGetId([
-                'clinic_name' => 'Lumina Care Therapy Clinic',
+                'clinic_name' => 'HH therapydesk Therapy Clinic',
                 'address'     => '12, Harmony Complex, MG Road, Bengaluru - 560001',
                 'phone'       => '9876543210',
                 'email'       => 'contact@luminacare.in',
