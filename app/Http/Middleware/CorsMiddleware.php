@@ -12,7 +12,11 @@ class CorsMiddleware
         $origin  = $request->headers->get('Origin', '');
         $allowed = array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', ''))));
 
-        $allowOrigin = in_array($origin, $allowed, true) ? $origin : ($allowed[0] ?? '*');
+        if (empty($allowed) || in_array('*', $allowed, true)) {
+            $allowOrigin = $origin ?: '*';
+        } else {
+            $allowOrigin = in_array($origin, $allowed, true) ? $origin : ($allowed[0] ?? '*');
+        }
 
         if ($request->isMethod('OPTIONS')) {
             return response('', 204)
