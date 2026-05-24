@@ -2,6 +2,11 @@
 /.idea
 Homestead.json
 Homestead.yaml
+
+# Environment (never commit secrets)
 .env
+.env.*
+!.env.example
 
 .phpunit.result.cache
+/storage/*.key
