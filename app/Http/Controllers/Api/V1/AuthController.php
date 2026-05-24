@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
@@ -30,13 +31,13 @@ class AuthController extends Controller
             }
 
             $user = $guard->user();
-            $user->loadMissing('role');
+            $user->loadMissing('role.permissions');
 
             return ApiResponse::success([
                 'token' => $token,
                 'token_type' => 'bearer',
                 'expires_in' => $guard->factory()->getTTL() * 60,
-                'user' => $user,
+                'user' => $user->toArrayWithPermissions(),
             ], 'Login successful');
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
@@ -48,9 +49,12 @@ class AuthController extends Controller
     public function me()
     {
         $user = Auth::guard('api')->user();
-        $user?->loadMissing('role');
+        $user?->loadMissing('role.permissions');
 
-        return ApiResponse::success($user, 'OK');
+        return ApiResponse::success(
+            $user ? $user->toArrayWithPermissions() : null,
+            'OK'
+        );
     }
 
     public function refresh()
@@ -61,13 +65,13 @@ class AuthController extends Controller
 
             $token = $guard->refresh();
             $user = $guard->user();
-            $user?->loadMissing('role');
+            $user?->loadMissing('role.permissions');
 
             return ApiResponse::success([
                 'token' => $token,
                 'token_type' => 'bearer',
                 'expires_in' => $guard->factory()->getTTL() * 60,
-                'user' => $user,
+                'user' => $user ? $user->toArrayWithPermissions() : null,
             ], 'Token refreshed');
         } catch (JWTException $e) {
             return ApiResponse::error('Unable to refresh token', 401);
@@ -81,6 +85,30 @@ class AuthController extends Controller
             return ApiResponse::success(null, 'Successfully logged out');
         } catch (JWTException $e) {
             return ApiResponse::error('Unable to logout', 400);
+        }
+    }
+
+    public function updateProfile(Request $request)
+    {
+        try {
+            $user = Auth::guard('api')->user();
+            if (! $user) {
+                return ApiResponse::error('Unauthenticated', 401);
+            }
+
+            $this->validate($request, [
+                'name' => ['required', 'string', 'max:100'],
+                'email' => ['required', 'email', 'max:150', Rule::unique('users', 'email')->ignore($user->id)],
+                'phone' => ['nullable', 'string', 'max:20'],
+            ]);
+
+            $user->fill($request->only(['name', 'email', 'phone']));
+            $user->save();
+            $user->load('role');
+
+            return ApiResponse::success($user, 'Profile updated');
+        } catch (ValidationException $e) {
+            return ApiResponse::error('Validation failed', 422, $e->errors());
         }
     }
 

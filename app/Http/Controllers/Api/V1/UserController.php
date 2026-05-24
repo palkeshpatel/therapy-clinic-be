@@ -95,7 +95,15 @@ class UserController extends Controller
                 'status' => ['sometimes', 'required', Rule::in(['active', 'inactive'])],
             ]);
 
-            $user->fill($request->only(['name', 'email', 'phone', 'role_id', 'status']));
+            $fields = $request->only(['name', 'email', 'phone', 'status']);
+            if (! $user->isAdministrator() && $request->has('role_id')) {
+                $fields['role_id'] = $request->input('role_id');
+            } elseif ($user->isAdministrator() && $request->has('role_id')
+                && (int) $request->input('role_id') !== (int) $user->role_id) {
+                return ApiResponse::error('Administrator role cannot be changed', 403);
+            }
+
+            $user->fill($fields);
             if ($request->has('password')) {
                 $user->password = Hash::make((string) $request->input('password'));
             }
@@ -110,9 +118,13 @@ class UserController extends Controller
 
     public function destroy($id)
     {
-        $user = User::find($id);
+        $user = User::with('role')->find($id);
         if (! $user) {
             return ApiResponse::error('User not found', 404);
+        }
+
+        if ($user->isAdministrator()) {
+            return ApiResponse::error('Administrator account cannot be deleted', 403);
         }
 
         $user->delete();

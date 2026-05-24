@@ -28,36 +28,49 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
             $router->post('refresh', 'Api\\V1\\AuthController@refresh');
             $router->post('logout', 'Api\\V1\\AuthController@logout');
             $router->post('change-password', 'Api\\V1\\AuthController@changePassword');
+            $router->put('profile', 'Api\\V1\\AuthController@updateProfile');
         });
     });
 
-    $router->group(['middleware' => ['auth', 'role:admin']], function () use ($router) {
-        // Users
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:users,view']], function () use ($router) {
         $router->get('users', 'Api\\V1\\UserController@index');
-        $router->post('users', 'Api\\V1\\UserController@store');
         $router->get('users/{id}', 'Api\\V1\\UserController@show');
+    });
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:users,create']], function () use ($router) {
+        $router->post('users', 'Api\\V1\\UserController@store');
+    });
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:users,edit']], function () use ($router) {
         $router->put('users/{id}', 'Api\\V1\\UserController@update');
+    });
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:users,delete']], function () use ($router) {
         $router->delete('users/{id}', 'Api\\V1\\UserController@destroy');
+    });
 
-        // Roles + permissions
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:roles,view']], function () use ($router) {
         $router->get('roles', 'Api\\V1\\RoleController@index');
-        $router->post('roles', 'Api\\V1\\RoleController@store');
         $router->get('roles/{id}', 'Api\\V1\\RoleController@show');
-        $router->put('roles/{id}', 'Api\\V1\\RoleController@update');
-        $router->delete('roles/{id}', 'Api\\V1\\RoleController@destroy');
-        $router->put('roles/{id}/permissions', 'Api\\V1\\RoleController@syncPermissions');
-
-        // Permissions
         $router->get('permissions', 'Api\\V1\\PermissionController@index');
+    });
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:roles,create']], function () use ($router) {
+        $router->post('roles', 'Api\\V1\\RoleController@store');
+    });
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:roles,edit']], function () use ($router) {
+        $router->put('roles/{id}', 'Api\\V1\\RoleController@update');
+        $router->put('roles/{id}/permissions', 'Api\\V1\\RoleController@syncPermissions');
+    });
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:roles,delete']], function () use ($router) {
+        $router->delete('roles/{id}', 'Api\\V1\\RoleController@destroy');
+    });
 
-        // Holidays
+    $router->group(['middleware' => ['auth', 'role:admin', 'administrator']], function () use ($router) {
         $router->get('holidays', 'Api\\V1\\HolidayController@index');
         $router->post('holidays/generate-year', 'Api\\V1\\HolidayController@generateYear');
         $router->post('holidays', 'Api\\V1\\HolidayController@store');
         $router->put('holidays/{id}', 'Api\\V1\\HolidayController@update');
         $router->delete('holidays/{id}', 'Api\\V1\\HolidayController@destroy');
+    });
 
-        // Attendance summary
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:attendance,view']], function () use ($router) {
         $router->get('attendance/summary', 'Api\\V1\\AttendanceController@summary');
     });
 
@@ -152,7 +165,7 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
     });
 
     // Salary + Payroll (Admin)
-    $router->group(['middleware' => ['auth', 'role:admin']], function () use ($router) {
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:salary,view']], function () use ($router) {
         $router->get('salary/models', 'Api\\V1\\SalaryModelController@index');
         $router->post('salary/models', 'Api\\V1\\SalaryModelController@store');
         $router->put('salary/models/{id}', 'Api\\V1\\SalaryModelController@update');
@@ -220,8 +233,7 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->delete('payments/{id}', 'Api\\V1\\PaymentController@destroy');
     });
 
-    // Dashboard + Reports
-    $router->group(['middleware' => ['auth', 'role:admin']], function () use ($router) {
+    $router->group(['middleware' => ['auth', 'role:admin', 'permission:reports,view']], function () use ($router) {
         $router->get('dashboard/stats', 'Api\\V1\\DashboardController@stats');
 
         $router->get('reports/revenue', 'Api\\V1\\ReportController@revenue');

@@ -94,6 +94,7 @@ class DemoDataSeeder extends Seeder
                 $therapistId = DB::table('therapists')->insertGetId([
                     'user_id'          => $userId,
                     'name'             => $entry['user']['name'],
+                    'type'             => 'therapist',
                     'specialization'   => $entry['profile']['specialization'],
                     'phone'            => $entry['user']['phone'],
                     'email'            => $entry['user']['email'],

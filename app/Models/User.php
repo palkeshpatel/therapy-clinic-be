@@ -48,6 +48,58 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
         return $this->belongsTo(Role::class);
     }
 
+    public function isAdministrator(): bool
+    {
+        $this->loadMissing('role');
+
+        return $this->role
+            && strcasecmp((string) $this->role->role_name, 'Admin') === 0;
+    }
+
+    public function hasPermission(string $module, string $action): bool
+    {
+        if ($this->isAdministrator()) {
+            return true;
+        }
+
+        $this->loadMissing('role.permissions');
+
+        if (! $this->role) {
+            return false;
+        }
+
+        return $this->role->permissions->contains(function ($permission) use ($module, $action) {
+            return $permission->module === $module && $permission->action === $action;
+        });
+    }
+
+    /** @return list<string> e.g. ["patients:view", "scheduling:create"] or ["*"] for Admin */
+    public function permissionKeys(): array
+    {
+        if ($this->isAdministrator()) {
+            return ['*'];
+        }
+
+        $this->loadMissing('role.permissions');
+
+        if (! $this->role) {
+            return [];
+        }
+
+        return $this->role->permissions
+            ->map(fn ($p) => "{$p->module}:{$p->action}")
+            ->values()
+            ->all();
+    }
+
+    public function toArrayWithPermissions(): array
+    {
+        $data = $this->toArray();
+        $data['permissions'] = $this->permissionKeys();
+
+        return $data;
+    }
+
     public function therapist()
     {
         return $this->hasOne(Therapist::class);
