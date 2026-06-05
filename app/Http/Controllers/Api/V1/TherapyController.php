@@ -28,7 +28,7 @@ class TherapyController extends Controller
 
         $sortBy = (string) $request->input('sort_by', 'therapy_name');
         $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
-        $allowedSort = ['id', 'therapy_name', 'default_price', 'status', 'created_at'];
+        $allowedSort = ['id', 'therapy_name', 'session_price', 'fixed_price', 'status', 'created_at'];
         if (! in_array($sortBy, $allowedSort, true)) {
             $sortBy = 'therapy_name';
         }
@@ -43,11 +43,12 @@ class TherapyController extends Controller
             $this->validate($request, [
                 'therapy_name' => ['required', 'string', 'max:150'],
                 'description' => ['nullable', 'string'],
-                'default_price' => ['required', 'numeric', 'min:0'],
+                'session_price' => ['required', 'numeric', 'min:0'],
+                'fixed_price' => ['required', 'numeric', 'min:0'],
                 'status' => ['nullable', Rule::in(['active', 'inactive'])],
             ]);
 
-            $therapy = Therapy::create($request->only(['therapy_name', 'description', 'default_price', 'status']));
+            $therapy = Therapy::create($request->only(['therapy_name', 'description', 'session_price', 'fixed_price', 'status']));
             return ApiResponse::success($therapy, 'Therapy created', 201);
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
@@ -74,11 +75,12 @@ class TherapyController extends Controller
             $this->validate($request, [
                 'therapy_name' => ['sometimes', 'required', 'string', 'max:150'],
                 'description' => ['sometimes', 'nullable', 'string'],
-                'default_price' => ['sometimes', 'required', 'numeric', 'min:0'],
+                'session_price' => ['sometimes', 'required', 'numeric', 'min:0'],
+                'fixed_price' => ['sometimes', 'required', 'numeric', 'min:0'],
                 'status' => ['sometimes', 'required', Rule::in(['active', 'inactive'])],
             ]);
 
-            $therapy->fill($request->only(['therapy_name', 'description', 'default_price', 'status']));
+            $therapy->fill($request->only(['therapy_name', 'description', 'session_price', 'fixed_price', 'status']));
             $therapy->save();
 
             return ApiResponse::success($therapy, 'Therapy updated');

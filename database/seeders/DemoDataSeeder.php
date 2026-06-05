@@ -17,12 +17,12 @@ class DemoDataSeeder extends Seeder
         // 1. THERAPIES
         // ════════════════════════════════════════════════════════
         $therapyData = [
-            ['therapy_name' => 'Speech Therapy',        'description' => 'Helps children and adults improve communication, language, and articulation skills.', 'default_price' => 500, 'status' => 'active'],
-            ['therapy_name' => 'Occupational Therapy',  'description' => 'Develops daily living and fine motor skills for independence.', 'default_price' => 600, 'status' => 'active'],
-            ['therapy_name' => 'Behavioral Therapy',    'description' => 'Cognitive-behavioral strategies to manage anxiety, ADHD, and behavioral issues.', 'default_price' => 550, 'status' => 'active'],
-            ['therapy_name' => 'Physiotherapy',         'description' => 'Restores movement and function through physical rehabilitation.', 'default_price' => 450, 'status' => 'active'],
-            ['therapy_name' => 'ABA Therapy',           'description' => 'Applied Behavior Analysis for autism spectrum disorder.', 'default_price' => 800, 'status' => 'active'],
-            ['therapy_name' => 'Cognitive Therapy',     'description' => 'Improves thinking, memory, attention, and problem-solving skills.', 'default_price' => 500, 'status' => 'active'],
+            ['therapy_name' => 'Speech Therapy',        'description' => 'Helps children and adults improve communication, language, and articulation skills.', 'session_price' => 500, 'fixed_price' => 5000, 'status' => 'active'],
+            ['therapy_name' => 'Occupational Therapy',  'description' => 'Develops daily living and fine motor skills for independence.', 'session_price' => 600, 'fixed_price' => 6000, 'status' => 'active'],
+            ['therapy_name' => 'Behavioral Therapy',    'description' => 'Cognitive-behavioral strategies to manage anxiety, ADHD, and behavioral issues.', 'session_price' => 550, 'fixed_price' => 5500, 'status' => 'active'],
+            ['therapy_name' => 'Physiotherapy',         'description' => 'Restores movement and function through physical rehabilitation.', 'session_price' => 450, 'fixed_price' => 4500, 'status' => 'active'],
+            ['therapy_name' => 'ABA Therapy',           'description' => 'Applied Behavior Analysis for autism spectrum disorder.', 'session_price' => 800, 'fixed_price' => 12000, 'status' => 'active'],
+            ['therapy_name' => 'Cognitive Therapy',     'description' => 'Improves thinking, memory, attention, and problem-solving skills.', 'session_price' => 500, 'fixed_price' => 5000, 'status' => 'active'],
         ];
 
         $therapyIds = [];
@@ -94,7 +94,6 @@ class DemoDataSeeder extends Seeder
                 $therapistId = DB::table('therapists')->insertGetId([
                     'user_id'          => $userId,
                     'name'             => $entry['user']['name'],
-                    'type'             => 'therapist',
                     'specialization'   => $entry['profile']['specialization'],
                     'phone'            => $entry['user']['phone'],
                     'email'            => $entry['user']['email'],
@@ -613,7 +612,7 @@ class DemoDataSeeder extends Seeder
             if (DB::table('invoices')->where('invoice_no', $inv['invoice_no'])->exists()) {
                 continue;
             }
-            $price = (int) DB::table('therapies')->where('therapy_name', $inv['therapy'])->value('default_price');
+            $price = (int) DB::table('therapies')->where('therapy_name', $inv['therapy'])->value('session_price');
             $qty = $inv['qty'];
             $total = $price * $qty;
             $paid = match ($inv['status']) {

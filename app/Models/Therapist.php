@@ -9,14 +9,9 @@ class Therapist extends Model
 {
     use SoftDeletes;
 
-    public const TYPE_THERAPIST = 'therapist';
-
-    public const TYPE_STUDENT = 'student';
-
     protected $fillable = [
         'user_id',
         'name',
-        'type',
         'specialization',
         'phone',
         'email',

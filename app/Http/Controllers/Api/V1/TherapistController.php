@@ -31,10 +31,6 @@ class TherapistController extends Controller
             $query->where('status', $status);
         }
 
-        if ($type = $request->input('type')) {
-            $query->where('type', $type);
-        }
-
         $query->orderBy('name');
 
         return ApiResponse::paginate($query->paginate($perPage), 'OK');
@@ -46,7 +42,6 @@ class TherapistController extends Controller
             $this->validate($request, [
                 'user_id' => ['nullable', 'integer', 'exists:users,id'],
                 'name' => ['required', 'string', 'max:150'],
-                'type' => ['required', Rule::in(['therapist', 'student'])],
                 'specialization' => ['nullable', 'string', 'max:150'],
                 'phone' => ['nullable', 'string', 'max:20'],
                 'email' => ['nullable', 'email', 'max:150'],
@@ -57,7 +52,6 @@ class TherapistController extends Controller
             $therapist = Therapist::create($request->only([
                 'user_id',
                 'name',
-                'type',
                 'specialization',
                 'phone',
                 'email',
@@ -91,7 +85,6 @@ class TherapistController extends Controller
             $this->validate($request, [
                 'user_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
                 'name' => ['sometimes', 'required', 'string', 'max:150'],
-                'type' => ['sometimes', 'required', Rule::in(['therapist', 'student'])],
                 'specialization' => ['sometimes', 'nullable', 'string', 'max:150'],
                 'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
                 'email' => ['sometimes', 'nullable', 'email', 'max:150'],
@@ -102,7 +95,6 @@ class TherapistController extends Controller
             $therapist->fill($request->only([
                 'user_id',
                 'name',
-                'type',
                 'specialization',
                 'phone',
                 'email',

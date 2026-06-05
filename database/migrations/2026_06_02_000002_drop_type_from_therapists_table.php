@@ -8,17 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('therapists', function (Blueprint $table) {
-            $table->enum('type', ['therapist', 'student'])
-                ->default('therapist')
-                ->after('name');
-        });
+        if (Schema::hasColumn('therapists', 'type')) {
+            Schema::table('therapists', function (Blueprint $table) {
+                $table->dropColumn('type');
+            });
+        }
     }
 
     public function down(): void
     {
         Schema::table('therapists', function (Blueprint $table) {
-            $table->dropColumn('type');
+            $table->enum('type', ['therapist', 'student'])
+                ->default('therapist')
+                ->after('name');
         });
     }
 };

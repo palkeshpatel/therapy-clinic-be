@@ -9,12 +9,14 @@ class Therapy extends Model
     protected $fillable = [
         'therapy_name',
         'description',
-        'default_price',
+        'session_price',
+        'fixed_price',
         'status',
     ];
 
     protected $casts = [
-        'default_price' => 'decimal:2',
+        'session_price' => 'decimal:2',
+        'fixed_price' => 'decimal:2',
     ];
 
     public function patientTherapies()

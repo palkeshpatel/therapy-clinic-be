@@ -12,7 +12,8 @@ return new class extends Migration
             $table->id();
             $table->string('therapy_name', 150);
             $table->text('description')->nullable();
-            $table->decimal('default_price', 10, 2)->default(0);
+            $table->decimal('session_price', 10, 2)->default(0);
+            $table->decimal('fixed_price', 10, 2)->default(0);
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
         });
