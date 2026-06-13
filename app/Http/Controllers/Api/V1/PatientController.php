@@ -164,7 +164,9 @@ class PatientController extends Controller
         }
 
         try {
-            $this->validate($request, [
+            $hasTherapies = $request->has('therapies');
+
+            $rules = [
                 'patient_name' => ['sometimes', 'required', 'string', 'max:150'],
                 'guardian_name' => ['sometimes', 'nullable', 'string', 'max:150'],
                 'phone' => ['sometimes', 'required', 'string', 'max:20'],
@@ -176,22 +178,77 @@ class PatientController extends Controller
                 'notes' => ['sometimes', 'nullable', 'string'],
                 'default_billing_type' => ['sometimes', 'nullable', Rule::in(['monthly', 'session'])],
                 'status' => ['sometimes', 'required', Rule::in(['active', 'inactive', 'discharged'])],
-            ]);
+            ];
 
-            $patient->fill($request->only([
-                'patient_name',
-                'guardian_name',
-                'phone',
-                'email',
-                'dob',
-                'joining_date',
-                'gender',
-                'address',
-                'notes',
-                'default_billing_type',
-                'status',
-            ]));
-            $patient->save();
+            if ($hasTherapies) {
+                $rules['therapies'] = ['required', 'array', 'min:1'];
+                $rules['therapies.*.therapy_id'] = ['required', 'integer', 'exists:therapies,id'];
+                $rules['therapies.*.therapist_id'] = ['nullable', 'integer', 'exists:therapists,id'];
+                $rules['therapies.*.billing_type'] = ['required', Rule::in(['monthly', 'session'])];
+                $rules['therapies.*.fee'] = ['required', 'numeric', 'min:0'];
+                $rules['therapies.*.start_date'] = ['nullable', 'date'];
+            }
+
+            $this->validate($request, $rules);
+
+            \DB::transaction(function () use ($patient, $request, $hasTherapies) {
+                $patient->fill($request->only([
+                    'patient_name',
+                    'guardian_name',
+                    'phone',
+                    'email',
+                    'dob',
+                    'joining_date',
+                    'gender',
+                    'address',
+                    'notes',
+                    'default_billing_type',
+                    'status',
+                ]));
+                $patient->save();
+
+                if ($hasTherapies) {
+                    \App\Models\PatientTherapy::where('patient_id', $patient->id)->delete();
+
+                    $therapyRows = $request->input('therapies', []);
+                    $startDate = $patient->joining_date ?? now()->toDateString();
+                    $therapyIds = [];
+
+                    foreach ($therapyRows as $index => $row) {
+                        $therapyId = (int) $row['therapy_id'];
+
+                        if (in_array($therapyId, $therapyIds, true)) {
+                            throw ValidationException::withMessages([
+                                "therapies.{$index}.therapy_id" => ['Each therapy can only be added once.'],
+                            ]);
+                        }
+                        $therapyIds[] = $therapyId;
+
+                        $therapy = \App\Models\Therapy::query()->find($therapyId);
+                        if (! $therapy || $therapy->status !== 'active') {
+                            throw ValidationException::withMessages([
+                                "therapies.{$index}.therapy_id" => ['Selected therapy is not available.'],
+                            ]);
+                        }
+
+                        $sessionFee = (float) $therapy->session_price;
+                        $monthlyFee = (float) $therapy->fixed_price;
+
+                        $rowBillingType = $row['billing_type'] ?? 'monthly';
+                        $rowFee = isset($row['fee']) ? (float) $row['fee'] : ($rowBillingType === 'monthly' ? $monthlyFee : $sessionFee);
+
+                        \App\Models\PatientTherapy::create([
+                            'patient_id' => $patient->id,
+                            'therapy_id' => $therapyId,
+                            'therapist_id' => !empty($row['therapist_id']) ? (int) $row['therapist_id'] : null,
+                            'billing_type' => $rowBillingType,
+                            'fee' => $rowFee,
+                            'start_date' => $row['start_date'] ?? $startDate,
+                            'status' => 'active',
+                        ]);
+                    }
+                }
+            });
 
             return ApiResponse::success($patient, 'Patient updated');
         } catch (ValidationException $e) {
