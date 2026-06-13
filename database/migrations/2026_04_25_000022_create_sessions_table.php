@@ -15,6 +15,9 @@ return new class extends Migration
             $table->unsignedBigInteger('therapy_id');
             $table->unsignedBigInteger('slot_id')->nullable();
             $table->date('session_date')->index();
+            $table->time('start_time')->nullable();
+            $table->time('end_time')->nullable();
+            $table->string('duration', 20)->nullable();
             $table->enum('status', ['completed', 'absent', 'cancelled'])->default('completed');
             $table->text('notes')->nullable();
             $table->timestamps();

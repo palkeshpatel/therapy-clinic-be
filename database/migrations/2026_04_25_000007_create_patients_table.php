@@ -11,11 +11,15 @@ return new class extends Migration
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
             $table->string('patient_name', 150);
+            $table->string('guardian_name', 150)->nullable();
             $table->string('phone', 20)->index();
             $table->string('email', 150)->nullable();
             $table->date('dob')->nullable();
+            $table->date('joining_date')->nullable();
             $table->enum('gender', ['male', 'female', 'other'])->nullable();
             $table->text('address')->nullable();
+            $table->text('notes')->nullable();
+            $table->enum('default_billing_type', ['monthly', 'session'])->nullable();
             $table->enum('status', ['active', 'inactive', 'discharged'])->default('active');
             $table->timestamps();
             $table->softDeletes();
