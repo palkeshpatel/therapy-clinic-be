@@ -92,6 +92,9 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->get('patients/{id}/documents', 'Api\\V1\\PatientDocumentController@index');
         $router->get('patients/{id}/sessions', 'Api\\V1\\PatientController@sessions');
         $router->get('patients/{id}/invoices', 'Api\\V1\\PatientController@invoices');
+
+        $router->get('patient-intakes', 'Api\\V1\\PatientIntakeController@index');
+        $router->get('patient-intakes/{id}', 'Api\\V1\\PatientIntakeController@show');
     });
     $router->group(['middleware' => ['auth', 'role:admin']], function () use ($router) {
         $router->post('patients', 'Api\\V1\\PatientController@store');
@@ -101,6 +104,10 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->put('patients/{id}/medical-record', 'Api\\V1\\PatientMedicalRecordController@upsert');
         $router->post('patients/{id}/documents', 'Api\\V1\\PatientDocumentController@store');
         $router->delete('patients/{id}/documents/{docId}', 'Api\\V1\\PatientDocumentController@destroy');
+
+        $router->post('patient-intakes', 'Api\\V1\\PatientIntakeController@store');
+        $router->put('patient-intakes/{id}', 'Api\\V1\\PatientIntakeController@update');
+        $router->delete('patient-intakes/{id}', 'Api\\V1\\PatientIntakeController@destroy');
     });
 
     // Therapies (Admin/Staff full access, Therapist view access)
