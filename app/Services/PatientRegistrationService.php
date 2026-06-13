@@ -45,21 +45,23 @@ class PatientRegistrationService
 
                 $sessionFee = (float) $therapy->session_price;
                 $monthlyFee = (float) $therapy->fixed_price;
-                $appliedFee = $billingType === 'monthly' ? $monthlyFee : $sessionFee;
+                
+                $rowBillingType = $row['billing_type'] ?? $billingType;
+                $rowFee = isset($row['fee']) ? (float) $row['fee'] : ($rowBillingType === 'monthly' ? $monthlyFee : $sessionFee);
 
                 PatientTherapy::create([
                     'patient_id' => $patient->id,
                     'therapy_id' => $therapyId,
                     'therapist_id' => (int) $row['therapist_id'],
-                    'billing_type' => $billingType,
-                    'fee' => $appliedFee,
+                    'billing_type' => $rowBillingType,
+                    'fee' => $rowFee,
                     'start_date' => $row['start_date'] ?? $startDate,
                     'status' => 'active',
                 ]);
 
-                $totalMonthly += $monthlyFee;
-                $totalSession += $sessionFee;
-                $totalApplied += $appliedFee;
+                $totalMonthly += ($rowBillingType === 'monthly' ? $rowFee : 0);
+                $totalSession += ($rowBillingType === 'session' ? $rowFee : 0);
+                $totalApplied += $rowFee;
             }
 
             $patient->load(['therapies.therapy', 'therapies.therapist']);

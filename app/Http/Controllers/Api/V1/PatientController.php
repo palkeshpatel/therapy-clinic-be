@@ -93,10 +93,12 @@ class PatientController extends Controller
             ];
 
             if ($hasTherapies) {
-                $rules['default_billing_type'] = ['required', Rule::in(['monthly', 'session'])];
+                $rules['default_billing_type'] = ['nullable', Rule::in(['monthly', 'session'])];
                 $rules['therapies'] = ['required', 'array', 'min:1'];
                 $rules['therapies.*.therapy_id'] = ['required', 'integer', 'exists:therapies,id'];
                 $rules['therapies.*.therapist_id'] = ['required', 'integer', 'exists:therapists,id'];
+                $rules['therapies.*.billing_type'] = ['required', Rule::in(['monthly', 'session'])];
+                $rules['therapies.*.fee'] = ['required', 'numeric', 'min:0'];
                 $rules['therapies.*.start_date'] = ['nullable', 'date'];
             } else {
                 $rules['default_billing_type'] = ['nullable', Rule::in(['monthly', 'session'])];
@@ -124,7 +126,7 @@ class PatientController extends Controller
                 return ApiResponse::success($patient, 'Patient created', 201);
             }
 
-            $billingType = (string) $request->input('default_billing_type');
+            $billingType = (string) $request->input('default_billing_type', 'monthly');
             $patientFields['default_billing_type'] = $billingType;
             $patientFields['joining_date'] = $patientFields['joining_date'] ?? Carbon::now()->toDateString();
 
