@@ -211,7 +211,7 @@ class PatientController extends Controller
                     \App\Models\PatientTherapy::where('patient_id', $patient->id)->delete();
 
                     $therapyRows = $request->input('therapies', []);
-                    $startDate = $patient->joining_date ?? now()->toDateString();
+                    $startDate = $patient->joining_date ?? Carbon::now()->toDateString();
                     $therapyIds = [];
 
                     foreach ($therapyRows as $index => $row) {
