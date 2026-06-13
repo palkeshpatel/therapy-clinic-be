@@ -103,6 +103,8 @@ class PatientIntake extends Model
         'sibling_info',
         'sibling_age',
         'family_remark',
+        'pedigree_chart_data',
+        'pedigree_remarks',
 
         // Child Routine
         'routine_dressing',
@@ -268,6 +270,7 @@ class PatientIntake extends Model
         'previous_therapy' => 'array',
         'natal_pregnancy_history' => 'array',
         'family_history' => 'array',
+        'pedigree_chart_data' => 'array',
         'routine_selective_eating' => 'array',
         'speech_issues' => 'array',
         'speech_wh_questions' => 'array',

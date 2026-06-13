@@ -112,6 +112,8 @@ return new class extends Migration
             $table->text('sibling_info')->nullable();
             $table->text('sibling_age')->nullable();
             $table->text('family_remark')->nullable();
+            $table->json('pedigree_chart_data')->nullable();
+            $table->text('pedigree_remarks')->nullable();
 
             // Child Routine
             $table->text('routine_dressing')->nullable();
