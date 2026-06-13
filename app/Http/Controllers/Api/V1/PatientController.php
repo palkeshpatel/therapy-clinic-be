@@ -25,7 +25,7 @@ class PatientController extends Controller
         $query = Patient::query()
             ->select('patients.*')
             ->selectRaw('('.$therapyPick.') as primary_therapy_name')
-            ->withCount(['sessions as sessions_count'])
+            ->withCount(['sessions as sessions_count', 'therapies as therapies_count'])
             ->withMax('sessions as last_session_date', 'session_date');
 
         if ($search = trim((string) $request->input('search', ''))) {
