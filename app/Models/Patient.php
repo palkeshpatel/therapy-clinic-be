@@ -11,16 +11,21 @@ class Patient extends Model
 
     protected $fillable = [
         'patient_name',
+        'guardian_name',
         'phone',
         'email',
         'dob',
+        'joining_date',
         'gender',
         'address',
+        'notes',
+        'default_billing_type',
         'status',
     ];
 
     protected $casts = [
         'dob' => 'date',
+        'joining_date' => 'date',
     ];
 
     public function documents()

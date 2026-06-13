@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Patient;
+use App\Services\PatientRegistrationService;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -73,24 +74,72 @@ class PatientController extends Controller
         return ApiResponse::paginate($query->paginate($perPage), 'OK', $extraMeta);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, PatientRegistrationService $registrationService)
     {
         try {
-            $this->validate($request, [
+            $hasTherapies = $request->has('therapies');
+
+            $rules = [
                 'patient_name' => ['required', 'string', 'max:150'],
+                'guardian_name' => ['nullable', 'string', 'max:150'],
                 'phone' => ['required', 'string', 'max:20'],
                 'email' => ['nullable', 'email', 'max:150'],
                 'dob' => ['nullable', 'date'],
+                'joining_date' => ['nullable', 'date'],
                 'gender' => ['nullable', Rule::in(['male', 'female', 'other'])],
                 'address' => ['nullable', 'string'],
+                'notes' => ['nullable', 'string'],
                 'status' => ['nullable', Rule::in(['active', 'inactive', 'discharged'])],
+            ];
+
+            if ($hasTherapies) {
+                $rules['default_billing_type'] = ['required', Rule::in(['monthly', 'session'])];
+                $rules['therapies'] = ['required', 'array', 'min:1'];
+                $rules['therapies.*.therapy_id'] = ['required', 'integer', 'exists:therapies,id'];
+                $rules['therapies.*.therapist_id'] = ['required', 'integer', 'exists:therapists,id'];
+                $rules['therapies.*.start_date'] = ['nullable', 'date'];
+            } else {
+                $rules['default_billing_type'] = ['nullable', Rule::in(['monthly', 'session'])];
+            }
+
+            $this->validate($request, $rules);
+
+            $patientFields = $request->only([
+                'patient_name',
+                'guardian_name',
+                'phone',
+                'email',
+                'dob',
+                'joining_date',
+                'gender',
+                'address',
+                'notes',
+                'default_billing_type',
+                'status',
             ]);
 
-            $patient = Patient::create($request->only([
-                'patient_name', 'phone', 'email', 'dob', 'gender', 'address', 'status',
-            ]));
+            if (! $hasTherapies) {
+                $patient = Patient::create($patientFields);
 
-            return ApiResponse::success($patient, 'Patient created', 201);
+                return ApiResponse::success($patient, 'Patient created', 201);
+            }
+
+            $billingType = (string) $request->input('default_billing_type');
+            $patientFields['default_billing_type'] = $billingType;
+            $patientFields['joining_date'] = $patientFields['joining_date'] ?? Carbon::now()->toDateString();
+
+            $result = $registrationService->register(
+                $patientFields,
+                $request->input('therapies', []),
+                $billingType
+            );
+
+            return ApiResponse::success(
+                $result['patient'],
+                'Patient created with therapies',
+                201,
+                ['fee_summary' => $result['fee_summary']]
+            );
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
         }
@@ -98,7 +147,7 @@ class PatientController extends Controller
 
     public function show($id)
     {
-        $patient = Patient::with(['medicalRecords', 'therapies'])->find($id);
+        $patient = Patient::with(['medicalRecords', 'therapies.therapy', 'therapies.therapist'])->find($id);
         if (! $patient) {
             return ApiResponse::error('Patient not found', 404);
         }
@@ -115,16 +164,30 @@ class PatientController extends Controller
         try {
             $this->validate($request, [
                 'patient_name' => ['sometimes', 'required', 'string', 'max:150'],
+                'guardian_name' => ['sometimes', 'nullable', 'string', 'max:150'],
                 'phone' => ['sometimes', 'required', 'string', 'max:20'],
                 'email' => ['sometimes', 'nullable', 'email', 'max:150'],
                 'dob' => ['sometimes', 'nullable', 'date'],
+                'joining_date' => ['sometimes', 'nullable', 'date'],
                 'gender' => ['sometimes', 'nullable', Rule::in(['male', 'female', 'other'])],
                 'address' => ['sometimes', 'nullable', 'string'],
+                'notes' => ['sometimes', 'nullable', 'string'],
+                'default_billing_type' => ['sometimes', 'nullable', Rule::in(['monthly', 'session'])],
                 'status' => ['sometimes', 'required', Rule::in(['active', 'inactive', 'discharged'])],
             ]);
 
             $patient->fill($request->only([
-                'patient_name', 'phone', 'email', 'dob', 'gender', 'address', 'status',
+                'patient_name',
+                'guardian_name',
+                'phone',
+                'email',
+                'dob',
+                'joining_date',
+                'gender',
+                'address',
+                'notes',
+                'default_billing_type',
+                'status',
             ]));
             $patient->save();
 
