@@ -52,7 +52,7 @@ class PatientRegistrationService
                 PatientTherapy::create([
                     'patient_id' => $patient->id,
                     'therapy_id' => $therapyId,
-                    'therapist_id' => (int) $row['therapist_id'],
+                    'therapist_id' => !empty($row['therapist_id']) ? (int) $row['therapist_id'] : null,
                     'billing_type' => $rowBillingType,
                     'fee' => $rowFee,
                     'start_date' => $row['start_date'] ?? $startDate,
