@@ -133,4 +133,40 @@ class PatientIntakeController extends Controller
 
         return ApiResponse::success(null, 'Intake form deleted successfully');
     }
+
+    public function downloadPdf($id)
+    {
+        $intake = PatientIntake::with(['patient'])->find($id);
+
+        if (! $intake) {
+            return ApiResponse::error('Intake form not found', 404);
+        }
+
+        try {
+            $dompdf = new \Dompdf\Dompdf();
+            
+            $options = new \Dompdf\Options();
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isRemoteEnabled', true);
+            $dompdf->setOptions($options);
+
+            $html = view('pdf.intake', ['intake' => $intake])->render();
+
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $pdfOutput = $dompdf->output();
+
+            $filename = 'intake_form_' . str_replace(' ', '_', $intake->child_name ?? $id) . '.pdf';
+
+            return response($pdfOutput, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Access-Control-Expose-Headers' => 'Content-Disposition',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'PDF generation failed: ' . $e->getMessage()], 500);
+        }
+    }
 }
