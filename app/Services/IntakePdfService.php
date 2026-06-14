@@ -345,23 +345,16 @@ class IntakePdfService
             <table style="width:100%;border-collapse:collapse;">
                 <tr>
                     ' . $logoHtml . '
-                    <td style="vertical-align:middle;">
+                    <td style="vertical-align:middle;text-align:left;">
                         <p class="clinic-name">Helping Hands Child Development &amp; Education Centre</p>
                         <p class="clinic-tagline">Clinical Assessment Suite &bull; Patient Intake Record</p>
-                    </td>
-                    <td style="vertical-align:middle;text-align:right;width:30%;">
-                        <div style="background:#1e4a7a;border-radius:4px;padding:8px 12px;display:inline-block;">
-                            <div style="font-size:8px;color:#93c5fd;letter-spacing:0.5px;text-transform:uppercase;">Record ID</div>
-                            <div style="font-size:14px;font-weight:bold;color:#fff;">#INK-' . str_pad($i->id ?? 0, 4, '0', STR_PAD_LEFT) . '</div>
-                            <div style="font-size:7px;color:#93c5fd;">' . $date . '</div>
-                        </div>
                     </td>
                 </tr>
             </table>
         </div>
-        <div class="doc-title-bar">
-            Comprehensive Developmental Intake Assessment &nbsp;&nbsp;
-            <span style="background:' . $statusBg . ';border-radius:3px;padding:2px 8px;font-size:9px;">' . $status . '</span>
+        <div class="doc-title-bar" style="padding: 8px 0; line-height: 1.3;">
+            <span style="font-size: 8px; font-weight: normal; color: #dbeafe; letter-spacing: 1.5px; display: block; margin-bottom: 2px;">RECORD ID</span>
+            <span style="font-size: 14px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; display: block;">#INK-' . str_pad($i->id ?? 0, 4, '0', STR_PAD_LEFT) . '</span>
         </div>
         <div class="patient-meta-bar">
             <span>&#128100; ' . $name . '</span>
