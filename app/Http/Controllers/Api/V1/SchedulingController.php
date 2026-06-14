@@ -42,28 +42,52 @@ class SchedulingController extends Controller
             $this->validate($request, [
                 'date' => ['required', 'date'],
                 'slot_id' => ['required', 'integer', 'exists:time_slots,id'],
-                'patient_id' => ['required', 'integer', 'exists:patients,id'],
+                'patient_ids' => ['required', 'array', 'min:1'],
+                'patient_ids.*' => ['integer', 'exists:patients,id'],
                 'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
                 'therapy_id' => ['nullable', 'integer', 'exists:therapies,id'],
             ]);
 
-            $row = DailySchedule::create([
-                'date' => $request->input('date'),
-                'slot_id' => (int) $request->input('slot_id'),
-                'patient_id' => (int) $request->input('patient_id'),
-                'therapist_id' => (int) $request->input('therapist_id'),
-                'therapy_id' => $request->input('therapy_id'),
-                'status' => 'scheduled',
-                'created_by' => Auth::id(),
-            ]);
+            $date = $request->input('date');
+            $slot_id = (int) $request->input('slot_id');
+            $therapist_id = (int) $request->input('therapist_id');
+            $therapy_id = $request->input('therapy_id');
+            $patient_ids = $request->input('patient_ids');
 
-            $row->load(['slot', 'patient', 'therapist', 'therapy']);
-            return ApiResponse::success($row, 'Booked', 201);
+            $createdRows = [];
+
+            \DB::beginTransaction();
+            foreach ($patient_ids as $patient_id) {
+                // Check if this exact booking already exists to prevent duplicate
+                $exists = DailySchedule::where([
+                    'date' => $date,
+                    'slot_id' => $slot_id,
+                    'therapist_id' => $therapist_id,
+                    'patient_id' => $patient_id,
+                ])->exists();
+
+                if (! $exists) {
+                    $row = DailySchedule::create([
+                        'date' => $date,
+                        'slot_id' => $slot_id,
+                        'patient_id' => (int) $patient_id,
+                        'therapist_id' => $therapist_id,
+                        'therapy_id' => $therapy_id,
+                        'status' => 'scheduled',
+                        'created_by' => Auth::id(),
+                    ]);
+                    $row->load(['slot', 'patient', 'therapist', 'therapy']);
+                    $createdRows[] = $row;
+                }
+            }
+            \DB::commit();
+
+            return ApiResponse::success($createdRows, 'Booked successfully', 201);
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
         } catch (\Throwable $e) {
-            // unique constraint hit -> slot already taken
-            return ApiResponse::error('Slot already booked', 409);
+            \DB::rollBack();
+            return ApiResponse::error('Booking failed: ' . $e->getMessage(), 500);
         }
     }
 
