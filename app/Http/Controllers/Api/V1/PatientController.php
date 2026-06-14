@@ -100,6 +100,8 @@ class PatientController extends Controller
                 $rules['therapies.*.billing_type'] = ['required', Rule::in(['monthly', 'session'])];
                 $rules['therapies.*.fee'] = ['required', 'numeric', 'min:0'];
                 $rules['therapies.*.start_date'] = ['nullable', 'date'];
+                $rules['therapies.*.schedule_date'] = ['nullable', 'date'];
+                $rules['therapies.*.slot_id'] = ['nullable', 'integer', 'exists:time_slots,id'];
             } else {
                 $rules['default_billing_type'] = ['nullable', Rule::in(['monthly', 'session'])];
             }

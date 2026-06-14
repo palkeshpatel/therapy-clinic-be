@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\DailySchedule;
 use App\Models\Patient;
 use App\Models\PatientTherapy;
 use App\Models\Therapy;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -43,21 +45,55 @@ class PatientRegistrationService
                     ]);
                 }
 
-                $sessionFee = (float) $therapy->session_price;
-                $monthlyFee = (float) $therapy->fixed_price;
-                
+                $sessionFee  = (float) $therapy->session_price;
+                $monthlyFee  = (float) $therapy->fixed_price;
                 $rowBillingType = $row['billing_type'] ?? $billingType;
-                $rowFee = isset($row['fee']) ? (float) $row['fee'] : ($rowBillingType === 'monthly' ? $monthlyFee : $sessionFee);
+                $rowFee      = isset($row['fee'])
+                    ? (float) $row['fee']
+                    : ($rowBillingType === 'monthly' ? $monthlyFee : $sessionFee);
+
+                $therapistId  = !empty($row['therapist_id'])   ? (int) $row['therapist_id']  : null;
+                $slotId       = !empty($row['slot_id'])        ? (int) $row['slot_id']       : null;
+                $scheduleDate = !empty($row['schedule_date'])  ? $row['schedule_date']        : null;
 
                 PatientTherapy::create([
-                    'patient_id' => $patient->id,
-                    'therapy_id' => $therapyId,
-                    'therapist_id' => !empty($row['therapist_id']) ? (int) $row['therapist_id'] : null,
+                    'patient_id'   => $patient->id,
+                    'therapy_id'   => $therapyId,
+                    'therapist_id' => $therapistId,
                     'billing_type' => $rowBillingType,
-                    'fee' => $rowFee,
-                    'start_date' => $row['start_date'] ?? $startDate,
-                    'status' => 'active',
+                    'fee'          => $rowFee,
+                    'start_date'   => $row['start_date'] ?? $startDate,
+                    'status'       => 'active',
                 ]);
+
+                // ── Optionally create an initial DailySchedule booking ──────────
+                if ($slotId && $scheduleDate && $therapistId) {
+                    // Check if slot is already taken for this therapist + date
+                    $conflict = DailySchedule::query()
+                        ->where('therapist_id', $therapistId)
+                        ->where('slot_id', $slotId)
+                        ->whereDate('date', $scheduleDate)
+                        ->whereIn('status', ['scheduled', 'in_progress', 'completed'])
+                        ->exists();
+
+                    if ($conflict) {
+                        throw ValidationException::withMessages([
+                            "therapies.{$index}.slot_id" => [
+                                'This time slot is already booked for the selected therapist on that date.',
+                            ],
+                        ]);
+                    }
+
+                    DailySchedule::create([
+                        'date'         => $scheduleDate,
+                        'slot_id'      => $slotId,
+                        'patient_id'   => $patient->id,
+                        'therapist_id' => $therapistId,
+                        'therapy_id'   => $therapyId,
+                        'status'       => 'scheduled',
+                        'created_by'   => Auth::id(),
+                    ]);
+                }
 
                 $totalMonthly += ($rowBillingType === 'monthly' ? $rowFee : 0);
                 $totalSession += ($rowBillingType === 'session' ? $rowFee : 0);
@@ -67,13 +103,13 @@ class PatientRegistrationService
             $patient->load(['therapies.therapy', 'therapies.therapist']);
 
             return [
-                'patient' => $patient,
+                'patient'     => $patient,
                 'fee_summary' => [
-                    'billing_type' => $billingType,
-                    'total_monthly' => round($totalMonthly, 2),
+                    'billing_type'       => $billingType,
+                    'total_monthly'      => round($totalMonthly, 2),
                     'total_session_rate' => round($totalSession, 2),
-                    'total_applied' => round($totalApplied, 2),
-                    'therapy_count' => count($therapyRows),
+                    'total_applied'      => round($totalApplied, 2),
+                    'therapy_count'      => count($therapyRows),
                 ],
             ];
         });
