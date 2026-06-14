@@ -157,7 +157,17 @@ class PatientController extends Controller
         if (! $patient) {
             return ApiResponse::error('Patient not found', 404);
         }
-        return ApiResponse::success($patient, 'OK');
+
+        $schedules = \App\Models\DailySchedule::where('patient_id', $id)->get();
+        
+        $patientArray = $patient->toArray();
+        if (isset($patientArray['therapies'])) {
+            foreach ($patientArray['therapies'] as &$therapy) {
+                $therapy['schedules'] = $schedules->where('therapy_id', $therapy['therapy_id'])->values()->toArray();
+            }
+        }
+
+        return ApiResponse::success($patientArray, 'OK');
     }
 
     public function update(Request $request, $id)
@@ -191,6 +201,10 @@ class PatientController extends Controller
                 $rules['therapies.*.billing_type'] = ['required', Rule::in(['monthly', 'session'])];
                 $rules['therapies.*.fee'] = ['required', 'numeric', 'min:0'];
                 $rules['therapies.*.start_date'] = ['nullable', 'date'];
+                $rules['therapies.*.total_sessions'] = ['nullable', 'integer', 'min:1'];
+                $rules['therapies.*.schedules'] = ['nullable', 'array'];
+                $rules['therapies.*.schedules.*.date'] = ['required_with:therapies.*.schedules', 'date'];
+                $rules['therapies.*.schedules.*.slot_id'] = ['required_with:therapies.*.schedules', 'integer', 'exists:time_slots,id'];
             }
 
             $this->validate($request, $rules);
@@ -213,6 +227,7 @@ class PatientController extends Controller
 
                 if ($hasTherapies) {
                     \App\Models\PatientTherapy::where('patient_id', $patient->id)->delete();
+                    \App\Models\DailySchedule::where('patient_id', $patient->id)->delete();
 
                     $therapyRows = $request->input('therapies', []);
                     $startDate = $patient->joining_date ?? Carbon::now()->toDateString();
@@ -240,16 +255,56 @@ class PatientController extends Controller
 
                         $rowBillingType = $row['billing_type'] ?? 'monthly';
                         $rowFee = isset($row['fee']) ? (float) $row['fee'] : ($rowBillingType === 'monthly' ? $monthlyFee : $sessionFee);
+                        
+                        $therapistId = !empty($row['therapist_id']) ? (int) $row['therapist_id'] : null;
 
                         \App\Models\PatientTherapy::create([
                             'patient_id' => $patient->id,
                             'therapy_id' => $therapyId,
-                            'therapist_id' => !empty($row['therapist_id']) ? (int) $row['therapist_id'] : null,
+                            'therapist_id' => $therapistId,
                             'billing_type' => $rowBillingType,
                             'fee' => $rowFee,
+                            'total_sessions' => isset($row['total_sessions']) ? (int) $row['total_sessions'] : null,
                             'start_date' => $row['start_date'] ?? $startDate,
                             'status' => 'active',
                         ]);
+
+                        $schedules = $row['schedules'] ?? [];
+                        if (!empty($schedules) && $therapistId) {
+                            foreach ($schedules as $scheduleIndex => $sched) {
+                                $scheduleDate = $sched['date'] ?? null;
+                                $slotId = isset($sched['slot_id']) ? (int) $sched['slot_id'] : null;
+
+                                if (!$scheduleDate || !$slotId) {
+                                    continue;
+                                }
+
+                                $conflict = \App\Models\DailySchedule::query()
+                                    ->where('therapist_id', $therapistId)
+                                    ->where('slot_id', $slotId)
+                                    ->whereDate('date', $scheduleDate)
+                                    ->whereIn('status', ['scheduled', 'in_progress', 'completed'])
+                                    ->exists();
+
+                                if ($conflict) {
+                                    throw ValidationException::withMessages([
+                                        "therapies.{$index}.schedules.{$scheduleIndex}.slot_id" => [
+                                            'This time slot is already booked for the selected therapist on that date.',
+                                        ],
+                                    ]);
+                                }
+
+                                \App\Models\DailySchedule::create([
+                                    'date'         => $scheduleDate,
+                                    'slot_id'      => $slotId,
+                                    'patient_id'   => $patient->id,
+                                    'therapist_id' => $therapistId,
+                                    'therapy_id'   => $therapyId,
+                                    'status'       => 'scheduled',
+                                    'created_by'   => \Illuminate\Support\Facades\Auth::id(),
+                                ]);
+                            }
+                        }
                     }
                 }
             });
