@@ -143,26 +143,29 @@ class PatientIntakeController extends Controller
         }
 
         try {
-            $dompdf = new \Dompdf\Dompdf();
-            
             $options = new \Dompdf\Options();
             $options->set('isHtml5ParserEnabled', true);
-            $options->set('isRemoteEnabled', true);
-            $dompdf->setOptions($options);
+            $options->set('isRemoteEnabled', false);
+            $options->set('isPhpEnabled', false);
+            $options->set('defaultFont', 'DejaVu Sans');
 
-            $html = view('pdf.intake', ['intake' => $intake])->render();
+            $dompdf = new \Dompdf\Dompdf($options);
 
-            $dompdf->loadHtml($html);
+            // Use pure-PHP HTML builder — avoids Lumen Blade directive issues
+            $pdfService = new \App\Services\IntakePdfService($intake);
+            $html = $pdfService->buildHtml();
+
+            $dompdf->loadHtml($html, 'UTF-8');
             $dompdf->setPaper('A4', 'portrait');
             $dompdf->render();
 
             $pdfOutput = $dompdf->output();
 
-            $filename = 'intake_form_' . str_replace(' ', '_', $intake->child_name ?? $id) . '.pdf';
+            $filename = 'intake_' . str_replace(' ', '_', $intake->child_name ?? $id) . '_' . date('Ymd') . '.pdf';
 
             return response($pdfOutput, 200, [
-                'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'Content-Type'                => 'application/pdf',
+                'Content-Disposition'         => 'attachment; filename="' . $filename . '"',
                 'Access-Control-Expose-Headers' => 'Content-Disposition',
             ]);
         } catch (\Exception $e) {

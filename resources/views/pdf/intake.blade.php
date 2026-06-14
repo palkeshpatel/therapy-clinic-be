@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Intake Report - {{ $intake->child_name ?? 'Patient' }}</title>
     <style>
-        @page {
+        @@page {
             margin: 40px 40px 50px 40px;
         }
         body {
