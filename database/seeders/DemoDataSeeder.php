@@ -48,6 +48,10 @@ class DemoDataSeeder extends Seeder
             [
                 'user' => ['name' => 'Dr. Rahul Verma',    'email' => 'rahul@clinic.com',   'phone' => '9001000002'],
                 'profile' => ['specialization' => 'Occupational Therapy', 'joined_date' => '2021-06-01'],
+            ],
+            [
+                'user' => ['name' => 'Dr. Neha Patel',     'email' => 'neha@clinic.com',    'phone' => '9001000003'],
+                'profile' => ['specialization' => 'Behavioral Therapy',   'joined_date' => '2023-03-10'],
             ]
         ];
 
@@ -95,6 +99,10 @@ class DemoDataSeeder extends Seeder
         // ════════════════════════════════════════════════════════
         $patientData = [
             ['patient_name' => 'Aarav Kumar',      'phone' => '9900001001', 'email' => 'aarav.k@example.com',      'dob' => '2017-03-15', 'gender' => 'male',   'address' => 'Koramangala, Bengaluru', 'status' => 'active'],
+            ['patient_name' => 'Meera Reddy',      'phone' => '9900001002', 'email' => 'meera.r@example.com',      'dob' => '2016-08-22', 'gender' => 'female', 'address' => 'Indiranagar, Bengaluru', 'status' => 'active'],
+            ['patient_name' => 'Rohan Sharma',     'phone' => '9900001003', 'email' => 'rohan.s@example.com',      'dob' => '2018-01-10', 'gender' => 'male',   'address' => 'Whitefield, Bengaluru',  'status' => 'active'],
+            ['patient_name' => 'Ananya Singh',     'phone' => '9900001004', 'email' => 'ananya.s@example.com',     'dob' => '2019-05-05', 'gender' => 'female', 'address' => 'HSR Layout, Bengaluru',  'status' => 'active'],
+            ['patient_name' => 'Vikram Patel',     'phone' => '9900001005', 'email' => 'vikram.p@example.com',     'dob' => '2015-11-30', 'gender' => 'male',   'address' => 'Jayanagar, Bengaluru',   'status' => 'active'],
         ];
 
         $patientIds = [];
