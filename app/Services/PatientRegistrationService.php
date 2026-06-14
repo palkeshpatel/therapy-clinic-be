@@ -56,43 +56,57 @@ class PatientRegistrationService
                 $slotId       = !empty($row['slot_id'])        ? (int) $row['slot_id']       : null;
                 $scheduleDate = !empty($row['schedule_date'])  ? $row['schedule_date']        : null;
 
+                $totalSessions = isset($row['total_sessions']) ? (int) $row['total_sessions'] : null;
+
                 PatientTherapy::create([
-                    'patient_id'   => $patient->id,
-                    'therapy_id'   => $therapyId,
-                    'therapist_id' => $therapistId,
-                    'billing_type' => $rowBillingType,
-                    'fee'          => $rowFee,
-                    'start_date'   => $row['start_date'] ?? $startDate,
-                    'status'       => 'active',
+                    'patient_id'     => $patient->id,
+                    'therapy_id'     => $therapyId,
+                    'therapist_id'   => $therapistId,
+                    'billing_type'   => $rowBillingType,
+                    'fee'            => $rowFee,
+                    'total_sessions' => $totalSessions,
+                    'start_date'     => $row['start_date'] ?? $startDate,
+                    'status'         => 'active',
                 ]);
 
-                // ── Optionally create an initial DailySchedule booking ──────────
-                if ($slotId && $scheduleDate && $therapistId) {
-                    // Check if slot is already taken for this therapist + date
-                    $conflict = DailySchedule::query()
-                        ->where('therapist_id', $therapistId)
-                        ->where('slot_id', $slotId)
-                        ->whereDate('date', $scheduleDate)
-                        ->whereIn('status', ['scheduled', 'in_progress', 'completed'])
-                        ->exists();
+                // ── Optionally create multiple DailySchedule bookings ──────────
+                $schedules = $row['schedules'] ?? [];
+                
+                if (!empty($schedules) && $therapistId) {
+                    foreach ($schedules as $scheduleIndex => $sched) {
+                        $scheduleDate = $sched['date'] ?? null;
+                        $slotId = isset($sched['slot_id']) ? (int) $sched['slot_id'] : null;
 
-                    if ($conflict) {
-                        throw ValidationException::withMessages([
-                            "therapies.{$index}.slot_id" => [
-                                'This time slot is already booked for the selected therapist on that date.',
-                            ],
+                        if (!$scheduleDate || !$slotId) {
+                            continue;
+                        }
+
+                        // Check if slot is already taken for this therapist + date
+                        $conflict = DailySchedule::query()
+                            ->where('therapist_id', $therapistId)
+                            ->where('slot_id', $slotId)
+                            ->whereDate('date', $scheduleDate)
+                            ->whereIn('status', ['scheduled', 'in_progress', 'completed'])
+                            ->exists();
+
+                        if ($conflict) {
+                            throw ValidationException::withMessages([
+                                "therapies.{$index}.schedules.{$scheduleIndex}.slot_id" => [
+                                    'This time slot is already booked for the selected therapist on that date.',
+                                ],
+                            ]);
+                        }
+
+                        DailySchedule::create([
+                            'date'         => $scheduleDate,
+                            'slot_id'      => $slotId,
+                            'patient_id'   => $patient->id,
+                            'therapist_id' => $therapistId,
+                            'therapy_id'   => $therapyId,
+                            'status'       => 'scheduled',
+                            'created_by'   => Auth::id(),
                         ]);
                     }
-
-                    DailySchedule::create([
-                        'date'         => $scheduleDate,
-                        'slot_id'      => $slotId,
-                        'patient_id'   => $patient->id,
-                        'therapist_id' => $therapistId,
-                        'therapy_id'   => $therapyId,
-                        'status'       => 'scheduled',
-                        'created_by'   => Auth::id(),
-                    ]);
                 }
 
                 $totalMonthly += ($rowBillingType === 'monthly' ? $rowFee : 0);
