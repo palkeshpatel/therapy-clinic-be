@@ -107,7 +107,7 @@ class IntakePdfService
             .pdf-header {
                 background: ' . self::BG_HEADER . ';
                 color: #fff;
-                padding: 24px 22px 24px 22px;
+                padding: 28px 22px 28px 22px;
                 margin-bottom: 0;
             }
             .clinic-name {
@@ -335,8 +335,8 @@ class IntakePdfService
 
         $logoHtml = '';
         if ($this->logoData) {
-            $logoHtml = '<td style="vertical-align:middle;width:120px;padding-right:20px;">
-                <img src="' . $this->logoData . '" style="height:100px;width:100px;display:block;" />
+            $logoHtml = '<td style="vertical-align:middle;width:170px;padding-right:20px;">
+                <img src="' . $this->logoData . '" style="height:150px;width:150px;display:block;" />
             </td>';
         }
 
