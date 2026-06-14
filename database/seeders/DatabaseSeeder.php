@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
             TimeSlotsSeeder::class,
             HolidaySeeder::class,
             TherapySeeder::class,
-            // DemoDataSeeder::class,
+            DemoDataSeeder::class,
         ]);
     }
 }
