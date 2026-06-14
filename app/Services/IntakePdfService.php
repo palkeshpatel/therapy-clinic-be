@@ -7,6 +7,7 @@ use App\Models\PatientIntake;
 class IntakePdfService
 {
     private PatientIntake $intake;
+    private string $logoData = '';
 
     // Brand colors
     const PRIMARY      = '#1a3c5e';   // Deep navy
@@ -25,9 +26,10 @@ class IntakePdfService
     const TEXT_LIGHT   = '#64748b';
     const BORDER       = '#bfdbfe';   // Blue-tinted border
 
-    public function __construct(PatientIntake $intake)
+    public function __construct(PatientIntake $intake, string $logoData = '')
     {
         $this->intake = $intake;
+        $this->logoData = $logoData;
     }
 
     /* ── Helpers ───────────────────────────────────────────── */
@@ -105,11 +107,11 @@ class IntakePdfService
             .pdf-header {
                 background: ' . self::BG_HEADER . ';
                 color: #fff;
-                padding: 18px 22px 14px 22px;
+                padding: 14px 22px 14px 22px;
                 margin-bottom: 0;
             }
             .clinic-name {
-                font-size: 17px;
+                font-size: 16px;
                 font-weight: bold;
                 color: #ffffff;
                 margin: 0 0 2px 0;
@@ -331,12 +333,20 @@ class IntakePdfService
         $status = strtoupper($i->status ?? 'DRAFT');
         $statusBg = ($i->status === 'completed') ? '#16a34a' : '#d97706';
 
+        $logoHtml = '';
+        if ($this->logoData) {
+            $logoHtml = '<td style="vertical-align:middle;width:55px;padding-right:12px;">
+                <img src="' . $this->logoData . '" style="height:46px;width:46px;display:block;" />
+            </td>';
+        }
+
         return '
         <div class="pdf-header">
             <table style="width:100%;border-collapse:collapse;">
                 <tr>
-                    <td style="vertical-align:middle;width:70%;">
-                        <p class="clinic-name">&#9829; Helping Hands Child Development &amp; Education Centre</p>
+                    ' . $logoHtml . '
+                    <td style="vertical-align:middle;">
+                        <p class="clinic-name">Helping Hands Child Development &amp; Education Centre</p>
                         <p class="clinic-tagline">Clinical Assessment Suite &bull; Patient Intake Record</p>
                     </td>
                     <td style="vertical-align:middle;text-align:right;width:30%;">

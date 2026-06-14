@@ -145,14 +145,20 @@ class PatientIntakeController extends Controller
         try {
             $options = new \Dompdf\Options();
             $options->set('isHtml5ParserEnabled', true);
-            $options->set('isRemoteEnabled', false);
+            $options->set('isRemoteEnabled', true);
             $options->set('isPhpEnabled', false);
             $options->set('defaultFont', 'DejaVu Sans');
 
             $dompdf = new \Dompdf\Dompdf($options);
 
+            $logoData = '';
+            $logoPath = public_path('logo.png');
+            if (file_exists($logoPath)) {
+                $logoData = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+            }
+
             // Use pure-PHP HTML builder — avoids Lumen Blade directive issues
-            $pdfService = new \App\Services\IntakePdfService($intake);
+            $pdfService = new \App\Services\IntakePdfService($intake, $logoData);
             $html = $pdfService->buildHtml();
 
             $dompdf->loadHtml($html, 'UTF-8');
