@@ -127,10 +127,10 @@ class IntakePdfService
             .doc-title-bar {
                 background: ' . self::PRIMARY_LIGHT . ';
                 color: #fff;
-                text-align: center;
+                text-align: left;
                 font-size: 12px;
                 font-weight: bold;
-                padding: 7px 0;
+                padding: 7px 22px;
                 letter-spacing: 1px;
                 text-transform: uppercase;
                 margin-bottom: 14px;
@@ -345,17 +345,20 @@ class IntakePdfService
             <table style="width:100%;border-collapse:collapse;">
                 <tr>
                     ' . $logoHtml . '
-                    <td style="vertical-align:middle;text-align:left;">
+                    <td style="vertical-align:middle;">
                         <p class="clinic-name">Helping Hands Child Development &amp; Education Centre</p>
                         <p class="clinic-tagline">Clinical Assessment Suite &bull; Patient Intake Record</p>
+                    </td>
+                    <td style="vertical-align:middle;text-align:right;width:1;">
+                       
                     </td>
                 </tr>
             </table>
         </div>
-        <div class="doc-title-bar" style="padding: 8px 0; line-height: 1.3;">
-            <span style="font-size: 8px; font-weight: normal; color: #dbeafe; letter-spacing: 1.5px; display: block; margin-bottom: 2px;">RECORD ID</span>
-            <span style="font-size: 14px; font-weight: bold; color: #ffffff; letter-spacing: 0.5px; display: block;">#INK-' . str_pad($i->id ?? 0, 4, '0', STR_PAD_LEFT) . '</span>
-        </div>
+        <div class="doc-title-bar">
+           Record ID &nbsp;&nbsp;    
+          #INK-' . str_pad($i->id ?? 0, 4, '0', STR_PAD_LEFT) . '
+        </div>  
         <div class="patient-meta-bar">
             <span>&#128100; ' . $name . '</span>
             <span>&#128197; DOB: ' . $dob . '</span>
