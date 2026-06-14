@@ -57,7 +57,7 @@ class PatientIntakeController extends Controller
     {
         try {
             $rules = [
-                'patient_id' => ['required', 'integer', 'exists:patients,id'],
+                'patient_id' => ['required', 'integer', 'exists:patients,id', 'unique:patient_intakes,patient_id'],
                 'date_of_assessment' => ['nullable', 'date'],
                 'status' => ['nullable', Rule::in(['draft', 'completed'])],
             ];

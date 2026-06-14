@@ -36,6 +36,10 @@ class PatientController extends Controller
             });
         }
 
+        if ($request->boolean('without_intake')) {
+            $query->doesntHave('intake');
+        }
+
         $allowedStatuses = ['active', 'inactive', 'discharged'];
         if ($request->filled('status')) {
             $raw = $request->input('status');

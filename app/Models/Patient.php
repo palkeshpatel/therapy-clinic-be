@@ -62,5 +62,10 @@ class Patient extends Model
     {
         return $this->hasMany(WaitingList::class);
     }
+
+    public function intake()
+    {
+        return $this->hasOne(PatientIntake::class);
+    }
 }
 
