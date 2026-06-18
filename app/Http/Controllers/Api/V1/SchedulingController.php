@@ -59,14 +59,22 @@ class SchedulingController extends Controller
             \DB::beginTransaction();
             foreach ($patient_ids as $patient_id) {
                 // Check if this exact booking already exists to prevent duplicate
-                $exists = DailySchedule::where([
+                $existing = DailySchedule::where([
                     'date' => $date,
                     'slot_id' => $slot_id,
                     'therapist_id' => $therapist_id,
                     'patient_id' => $patient_id,
-                ])->exists();
+                ])->first();
 
-                if (! $exists) {
+                if ($existing) {
+                    if ($existing->status === 'cancelled') {
+                        $existing->status = 'scheduled';
+                        $existing->therapy_id = $therapy_id;
+                        $existing->save();
+                        $existing->load(['slot', 'patient', 'therapist', 'therapy']);
+                        $createdRows[] = $existing;
+                    }
+                } else {
                     $row = DailySchedule::create([
                         'date' => $date,
                         'slot_id' => $slot_id,
