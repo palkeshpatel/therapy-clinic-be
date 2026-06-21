@@ -90,6 +90,10 @@ class SchedulingController extends Controller
             }
             \DB::commit();
 
+            if (empty($createdRows)) {
+                return ApiResponse::error('All selected patients are already booked for this slot', 409);
+            }
+
             return ApiResponse::success($createdRows, 'Booked successfully', 201);
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
