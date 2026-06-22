@@ -75,21 +75,18 @@ class TherapistPortalController extends Controller
         }
 
         $today = Carbon::today()->toDateString();
-        $row = TherapistAttendance::query()->firstOrNew([
+        $row = TherapistAttendance::create([
             'therapist_id' => $therapist->id,
             'date' => $today,
+            'check_in' => Carbon::now(),
         ]);
-
-        if (! $row->check_in) {
-            $row->check_in = Carbon::now();
-        }
-        $row->save();
+        
         $row->load('therapist');
 
         return ApiResponse::success($row, 'Checked in');
     }
 
-    public function attendanceCheckOut()
+    public function attendanceCheckOut(Request $request)
     {
         $therapist = $this->requireTherapist();
         if (! $therapist) {
@@ -97,19 +94,24 @@ class TherapistPortalController extends Controller
         }
 
         $today = Carbon::today()->toDateString();
-        $row = TherapistAttendance::query()->firstOrNew([
-            'therapist_id' => $therapist->id,
-            'date' => $today,
-        ]);
+        
+        // Find the latest active record (check_in not null, check_out is null)
+        $row = TherapistAttendance::query()
+            ->where('therapist_id', $therapist->id)
+            ->where('date', $today)
+            ->whereNull('check_out')
+            ->orderByDesc('id')
+            ->first();
 
-        if (! $row->check_in) {
-            $row->check_in = Carbon::now();
+        if ($row) {
+            $row->check_out = Carbon::now();
+            $row->reason = $request->input('reason');
+            $row->save();
+            $row->load('therapist');
+            return ApiResponse::success($row, 'Checked out');
         }
-        $row->check_out = Carbon::now();
-        $row->save();
-        $row->load('therapist');
 
-        return ApiResponse::success($row, 'Checked out');
+        return ApiResponse::error('No active session found to punch out', 400);
     }
 
     public function leavesIndex(Request $request)
@@ -403,10 +405,14 @@ class TherapistPortalController extends Controller
 
         $date = Carbon::parse($session->session_date)->toDateString();
 
+        // Match the EXACT booking row for this specific patient in this slot.
+        // Without patient_id, ->first() only updates one of many patients
+        // sharing the same slot, leaving the others stuck as "in_progress".
         $booking = DailySchedule::query()
             ->whereDate('date', $date)
             ->where('slot_id', $session->slot_id)
             ->where('therapist_id', $session->therapist_id)
+            ->where('patient_id', $session->patient_id)
             ->first();
 
         if (! $booking) {

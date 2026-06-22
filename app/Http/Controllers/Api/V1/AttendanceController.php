@@ -112,6 +112,7 @@ class AttendanceController extends Controller
                             'date' => Carbon::parse($row->date)->toDateString(),
                             'check_in' => optional($row->check_in)?->toDateTimeString(),
                             'check_out' => optional($row->check_out)?->toDateTimeString(),
+                            'reason' => $row->reason,
                             'status' => $row->check_out ? 'present' : ($row->check_in ? 'checked-in' : 'absent'),
                         ];
                     })->values(),
@@ -142,15 +143,12 @@ class AttendanceController extends Controller
             $today = Carbon::today()->toDateString();
             $therapistId = $myTherapistId ?: (int) $request->input('therapist_id');
 
-            $row = TherapistAttendance::query()->firstOrNew([
+            $row = TherapistAttendance::create([
                 'therapist_id' => $therapistId,
                 'date' => $today,
+                'check_in' => Carbon::now(),
             ]);
 
-            if (! $row->check_in) {
-                $row->check_in = Carbon::now();
-            }
-            $row->save();
             $row->load('therapist');
 
             return ApiResponse::success($row, 'Checked in');
@@ -172,19 +170,23 @@ class AttendanceController extends Controller
             $today = Carbon::today()->toDateString();
             $therapistId = $myTherapistId ?: (int) $request->input('therapist_id');
 
-            $row = TherapistAttendance::query()->firstOrNew([
-                'therapist_id' => $therapistId,
-                'date' => $today,
-            ]);
+            // Find the latest active record (check_in not null, check_out is null)
+            $row = TherapistAttendance::query()
+                ->where('therapist_id', $therapistId)
+                ->where('date', $today)
+                ->whereNull('check_out')
+                ->orderByDesc('id')
+                ->first();
 
-            if (! $row->check_in) {
-                $row->check_in = Carbon::now();
+            if ($row) {
+                $row->check_out = Carbon::now();
+                $row->reason = $request->input('reason');
+                $row->save();
+                $row->load('therapist');
+                return ApiResponse::success($row, 'Checked out');
             }
-            $row->check_out = Carbon::now();
-            $row->save();
-            $row->load('therapist');
 
-            return ApiResponse::success($row, 'Checked out');
+            return ApiResponse::error('No active session found to punch out', 400);
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
         }

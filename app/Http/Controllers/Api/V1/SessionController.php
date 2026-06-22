@@ -180,10 +180,14 @@ class SessionController extends Controller
 
         $date = Carbon::parse($session->session_date)->toDateString();
 
+        // Match the EXACT booking row for this specific patient in this slot.
+        // Without patient_id, ->first() only updates one of many patients
+        // sharing the same slot, leaving the others stuck as "in_progress".
         $booking = DailySchedule::query()
             ->whereDate('date', $date)
             ->where('slot_id', $session->slot_id)
             ->where('therapist_id', $session->therapist_id)
+            ->where('patient_id', $session->patient_id)
             ->first();
 
         if (! $booking) {

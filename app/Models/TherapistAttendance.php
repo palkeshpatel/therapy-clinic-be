@@ -13,6 +13,7 @@ class TherapistAttendance extends Model
         'date',
         'check_in',
         'check_out',
+        'reason',
     ];
 
     protected $casts = [
