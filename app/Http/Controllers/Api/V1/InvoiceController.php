@@ -16,7 +16,7 @@ class InvoiceController extends Controller
         $perPage = (int) ($request->input('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
-        $query = Invoice::query()->with('patient');
+        $query = Invoice::query()->with(['patient', 'items']);
 
         if ($patientId = $request->input('patient_id')) {
             $query->where('patient_id', $patientId);
@@ -50,6 +50,28 @@ class InvoiceController extends Controller
                 'items.*.quantity' => ['nullable', 'integer', 'min:1'],
                 'items.*.amount' => ['required', 'numeric', 'min:0'],
             ]);
+
+            // Prevent duplicate invoice generation for the same patient and month
+            $billableMonths = [];
+            foreach ($request->input('items', []) as $item) {
+                if (preg_match('/(\d{4}-\d{2})/', $item['description'], $matches)) {
+                    $billableMonths[] = $matches[1];
+                }
+            }
+            $billableMonths = array_unique($billableMonths);
+
+            foreach ($billableMonths as $month) {
+                $exists = Invoice::where('patient_id', $request->input('patient_id'))
+                    ->whereHas('items', function ($q) use ($month) {
+                        $q->where('description', 'like', "%{$month}%");
+                    })
+                    ->exists();
+
+                if ($exists) {
+                    $monthLabel = \Illuminate\Support\Carbon::parse($month . '-01')->format('F Y');
+                    return ApiResponse::error("An invoice for this patient has already been generated for {$monthLabel}.", 422);
+                }
+            }
 
             $invoice = $service->create($request->all());
 
