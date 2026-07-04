@@ -172,9 +172,9 @@ class TherapistPortalController extends Controller
             ]);
             $leave->load('therapist');
 
-            // ── Email admin: therapist applied leave ──────────────────
+            // ── Email admin: therapist applied leave (async) ──────────
             $therapistName = $therapist->name ?? 'A Therapist';
-            $leaveDate     = $leave->leave_date;
+            $leaveDate     = substr((string)$leave->leave_date, 0, 10);
             $leaveType     = ucwords(str_replace('_', ' ', $leave->leave_type));
             $reason        = $leave->reason ?? 'No reason provided';
 
@@ -208,10 +208,10 @@ class TherapistPortalController extends Controller
             ");
 
             try {
-                MailHelper::send(
+                MailHelper::sendAsync(
                     env('MAIL_FROM_ADDRESS'),
                     'Admin',
-                    "[Leave Request] {$therapistName} — {$leaveDate}",
+                    "[Leave Request] {$therapistName} - {$leaveDate}",
                     $html,
                     "New leave request from {$therapistName} for {$leaveDate} ({$leaveType}). Reason: {$reason}"
                 );

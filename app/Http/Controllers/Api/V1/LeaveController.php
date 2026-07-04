@@ -80,9 +80,9 @@ class LeaveController extends Controller
             ]);
             $leave->load('therapist');
 
-            // ── Email admin: new leave request (synchronous) ────────────
+            // ── Email admin: new leave request (async) ──────────────────
             $therapistName = $leave->therapist?->name ?? 'A Therapist';
-            $leaveDate     = $leave->leave_date;
+            $leaveDate     = substr((string)$leave->leave_date, 0, 10);
             $leaveType     = ucwords(str_replace('_', ' ', $leave->leave_type));
             $reason        = $leave->reason ?? 'No reason provided';
 
@@ -119,10 +119,10 @@ class LeaveController extends Controller
             ");
 
             try {
-                MailHelper::send(
+                MailHelper::sendAsync(
                     $adminEmail,
                     $adminName,
-                    "[Leave Request] {$therapistName} — {$leaveDate}",
+                    "[Leave Request] {$therapistName} - {$leaveDate}",
                     $html,
                     "New leave request from {$therapistName} for {$leaveDate} ({$leaveType}). Reason: {$reason}"
                 );
@@ -154,15 +154,16 @@ class LeaveController extends Controller
             $leave->save();
             $leave->load('therapist');
 
-            // ── Email therapist: leave approved or rejected (synchronous) ─
+            // ── Email therapist: leave approved or rejected (async) ───────
             if (in_array($newStatus, ['approved', 'rejected'])) {
                 $therapist      = $leave->therapist;
                 $therapistName  = $therapist?->name ?? 'Therapist';
-                $leaveDate      = $leave->leave_date;
+                $leaveDate      = substr((string)$leave->leave_date, 0, 10);
                 $leaveType      = ucwords(str_replace('_', ' ', $leave->leave_type));
 
                 $isApproved  = $newStatus === 'approved';
-                $statusLabel = $isApproved ? 'Approved ✅' : 'Rejected ❌';
+                $statusLabel = $isApproved ? 'Approved' : 'Rejected';
+                $statusText  = $isApproved ? 'Approved' : 'Rejected';
                 $statusColor = $isApproved ? '#16a34a' : '#dc2626';
                 $statusBg    = $isApproved ? '#f0fdf4' : '#fef2f2';
                 $message     = $isApproved
@@ -175,7 +176,7 @@ class LeaveController extends Controller
                     </p>
                     <p style='color:#374151;'>Leave status update for therapist <strong>{$therapistName}</strong>:</p>
                     <div style='background:{$statusBg};border-left:4px solid {$statusColor};border-radius:6px;padding:16px 20px;margin:20px 0;'>
-                        <p style='color:{$statusColor};font-weight:700;font-size:16px;margin:0 0 8px;'>{$statusLabel}</p>
+                        <p style='color:{$statusColor};font-weight:700;font-size:16px;margin:0 0 8px;'>{$statusText}</p>
                         <p style='color:#374151;margin:4px 0;'><strong>Therapist:</strong> {$therapistName}</p>
                         <p style='color:#374151;margin:4px 0;'><strong>Date:</strong> {$leaveDate}</p>
                         <p style='color:#374151;margin:4px 0;'><strong>Type:</strong> {$leaveType}</p>
@@ -184,10 +185,10 @@ class LeaveController extends Controller
                 ");
 
                 try {
-                    MailHelper::send(
+                    MailHelper::sendAsync(
                         env('MAIL_FROM_ADDRESS'),
                         'Admin',
-                        "[Leave {$statusLabel}] {$therapistName} — {$leaveDate}",
+                        "[Leave {$statusLabel}] {$therapistName} - {$leaveDate}",
                         $html,
                         "Leave for {$therapistName} on {$leaveDate} ({$leaveType}) has been {$newStatus}."
                     );
