@@ -156,9 +156,9 @@ class TherapistPortalController extends Controller
 
         try {
             $this->validate($request, [
-                'leave_date' => ['required', 'date'],
+                'leave_date' => ['required', 'date', 'after_or_equal:today'],
                 'leave_type' => ['required', 'string', 'max:50'],
-                'reason' => ['nullable', 'string'],
+                'reason'     => ['nullable', 'string'],
             ]);
 
             $leave = TherapistLeave::create([

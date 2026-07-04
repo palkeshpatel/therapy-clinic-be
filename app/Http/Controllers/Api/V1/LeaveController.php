@@ -54,16 +54,16 @@ class LeaveController extends Controller
             $myTherapistId = $this->myTherapistIdIfTherapist();
             if ($myTherapistId) {
                 $this->validate($request, [
-                    'leave_date' => ['required', 'date'],
+                    'leave_date' => ['required', 'date', 'after_or_equal:today'],
                     'leave_type' => ['required', 'string', 'max:50'],
-                    'reason' => ['nullable', 'string'],
+                    'reason'     => ['nullable', 'string'],
                 ]);
             } else {
                 $this->validate($request, [
                     'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
-                    'leave_date' => ['required', 'date'],
-                    'leave_type' => ['required', 'string', 'max:50'],
-                    'reason' => ['nullable', 'string'],
+                    'leave_date'   => ['required', 'date', 'after_or_equal:today'],
+                    'leave_type'   => ['required', 'string', 'max:50'],
+                    'reason'       => ['nullable', 'string'],
                 ]);
             }
 
