@@ -22,6 +22,8 @@ $router->get('/clear-cache', 'SystemController@clearCache');
 $router->group(['prefix' => 'api/v1'], function () use ($router) {
     $router->group(['prefix' => 'auth'], function () use ($router) {
         $router->post('login', 'Api\\V1\\AuthController@login');
+        $router->post('otp/send', 'Api\\V1\\AuthController@sendOtp');
+        $router->post('otp/verify', 'Api\\V1\\AuthController@verifyOtp');
 
         $router->group(['middleware' => 'auth'], function () use ($router) {
             $router->get('me', 'Api\\V1\\AuthController@me');
