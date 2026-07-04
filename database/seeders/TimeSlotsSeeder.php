@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class TimeSlotsSeeder extends Seeder
 {
@@ -12,12 +13,16 @@ class TimeSlotsSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        // 45-minute slots from 09:00 to 20:00 (client schedule: 9:00 AM – 8:00 PM)
-        $currentTime = Carbon::createFromTime(9, 0, 0);
+        Schema::disableForeignKeyConstraints();
+        DB::table('time_slots')->truncate();
+        Schema::enableForeignKeyConstraints();
+
+        // 60-minute slots from 08:00 to 20:00 (client schedule: 8:00 AM – 8:00 PM)
+        $currentTime = Carbon::createFromTime(8, 0, 0);
         $endTimeLimit = Carbon::createFromTime(20, 0, 0);
 
         while ($currentTime->lessThan($endTimeLimit)) {
-            $slotEnd = $currentTime->copy()->addMinutes(45);
+            $slotEnd = $currentTime->copy()->addMinutes(60);
 
             if ($slotEnd->greaterThan($endTimeLimit)) {
                 break;
@@ -26,14 +31,14 @@ class TimeSlotsSeeder extends Seeder
             DB::table('time_slots')->updateOrInsert(
                 ['start_time' => $currentTime->format('H:i:s'), 'end_time' => $slotEnd->format('H:i:s')],
                 [
-                    'duration_minutes' => 45,
+                    'duration_minutes' => 60,
                     'is_active'        => true,
                     'created_at'       => $now,
                     'updated_at'       => $now,
                 ]
             );
 
-            $currentTime->addMinutes(45);
+            $currentTime->addMinutes(60);
         }
     }
 }

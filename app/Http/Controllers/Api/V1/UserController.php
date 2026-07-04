@@ -17,7 +17,7 @@ class UserController extends Controller
         $perPage = (int) ($request->input('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
-        $query = User::query()->with('role');
+        $query = User::query()->with(['role', 'therapist']);
 
         if ($search = trim((string) $request->input('search', ''))) {
             $query->where(function ($q) use ($search) {
@@ -52,6 +52,7 @@ class UserController extends Controller
                 'password' => ['required', 'string', 'min:6'],
                 'role_id' => ['required', 'integer', 'exists:roles,id'],
                 'status' => ['nullable', Rule::in(['active', 'inactive'])],
+                'specialization' => ['nullable', 'string', 'max:150'],
             ]);
 
             $user = new User();
@@ -61,7 +62,20 @@ class UserController extends Controller
                 $user->status = 'active';
             }
             $user->save();
-            $user->load('role');
+
+            $role = \App\Models\Role::find($user->role_id);
+            if ($role && $role->role_type === 'therapist') {
+                \App\Models\Therapist::create([
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'status' => $user->status,
+                    'specialization' => $request->input('specialization'),
+                ]);
+            }
+
+            $user->load(['role', 'therapist']);
 
             return ApiResponse::success($user, 'User created', 201);
         } catch (ValidationException $e) {
@@ -71,7 +85,7 @@ class UserController extends Controller
 
     public function show($id)
     {
-        $user = User::with('role')->find($id);
+        $user = User::with(['role', 'therapist'])->find($id);
         if (! $user) {
             return ApiResponse::error('User not found', 404);
         }
@@ -93,6 +107,7 @@ class UserController extends Controller
                 'password' => ['sometimes', 'required', 'string', 'min:6'],
                 'role_id' => ['sometimes', 'required', 'integer', 'exists:roles,id'],
                 'status' => ['sometimes', 'required', Rule::in(['active', 'inactive'])],
+                'specialization' => ['sometimes', 'nullable', 'string', 'max:150'],
             ]);
 
             $fields = $request->only(['name', 'email', 'phone', 'status']);
@@ -108,7 +123,27 @@ class UserController extends Controller
                 $user->password = Hash::make((string) $request->input('password'));
             }
             $user->save();
-            $user->load('role');
+
+            $role = \App\Models\Role::find($user->role_id);
+            if ($role && $role->role_type === 'therapist') {
+                $therapist = \App\Models\Therapist::where('user_id', $user->id)->first();
+                if (!$therapist) {
+                    $therapist = new \App\Models\Therapist();
+                    $therapist->user_id = $user->id;
+                }
+                $therapist->fill([
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'status' => $user->status,
+                    'specialization' => $request->input('specialization'),
+                ]);
+                $therapist->save();
+            } else {
+                \App\Models\Therapist::where('user_id', $user->id)->update(['user_id' => null]);
+            }
+
+            $user->load(['role', 'therapist']);
 
             return ApiResponse::success($user, 'User updated');
         } catch (ValidationException $e) {
