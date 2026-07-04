@@ -9,10 +9,11 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
 class AuthController extends Controller
@@ -61,54 +62,56 @@ class AuthController extends Controller
 
             $email = strtolower(trim($request->input('email')));
 
-            // Check user exists and is active
+            // Check user exists and is active — show clear error if not
             $user = User::where('email', $email)->where('status', 'active')->first();
             if (! $user) {
-                // Return success to avoid email enumeration
-                return ApiResponse::success(null, 'If this email exists, an OTP has been sent.');
+                return ApiResponse::error('No active account found with this email address.', 404);
             }
 
             // Generate 6-digit OTP
-            $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+            $otp      = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             $cacheKey = 'otp:' . $email;
 
             // Store OTP in cache for 10 minutes
             Cache::put($cacheKey, $otp, 600);
 
-            // Send email ASYNC via shutdown function (fire and forget — response returns before email sends)
-            $userName  = $user->name;
-            register_shutdown_function(function () use ($email, $otp, $userName) {
-                try {
-                    // Flush output buffer so HTTP response is sent first
-                    if (function_exists('fastcgi_finish_request')) {
-                        fastcgi_finish_request();
-                    }
-                    Mail::send([], [], function ($message) use ($email, $otp, $userName) {
-                        $message->to($email, $userName)
-                            ->subject('Your Helping Hands Login OTP')
-                            ->html(
-                                "<div style='font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;'>"
-                                . "<h2 style='color:#7c3aed;margin-bottom:8px;'>Helping Hands</h2>"
-                                . "<p style='color:#6b7280;margin-bottom:24px;'>Child Development &amp; Education Center</p>"
-                                . "<p style='color:#111827;font-size:15px;'>Hello <strong>{$userName}</strong>,</p>"
-                                . "<p style='color:#374151;'>Use the code below to sign in. It expires in <strong>10 minutes</strong>.</p>"
-                                . "<div style='background:#f5f3ff;border:2px dashed #7c3aed;border-radius:10px;padding:20px;text-align:center;margin:20px 0;'>"
-                                . "<span style='font-size:36px;font-weight:800;letter-spacing:10px;color:#7c3aed;'>{$otp}</span>"
-                                . "</div>"
-                                . "<p style='color:#9ca3af;font-size:12px;'>If you did not request this, please ignore this email.</p>"
-                                . "</div>"
-                            );
-                    });
-                } catch (\Throwable $ex) {
-                    Log::error('OTP email failed', ['email' => $email, 'error' => $ex->getMessage()]);
-                }
-            });
+            // Send OTP email via PHPMailer (synchronous — reliable SMTP delivery)
+            $userName = $user->name;
+            $mailer = new PHPMailer(true);
+            $mailer->isSMTP();
+            $mailer->Host       = env('MAIL_HOST', 'smtp.gmail.com');
+            $mailer->SMTPAuth   = true;
+            $mailer->Username   = env('MAIL_USERNAME');
+            $mailer->Password   = env('MAIL_PASSWORD');
+            $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mailer->Port       = (int) env('MAIL_PORT', 587);
+            $mailer->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME', 'Helping Hands'));
+            $mailer->addAddress($email, $userName);
+            $mailer->isHTML(true);
+            $mailer->Subject = 'Your Helping Hands Login OTP';
+            $mailer->Body    =
+                "<div style='font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;'>"
+                . "<h2 style='color:#7c3aed;margin-bottom:8px;'>Helping Hands</h2>"
+                . "<p style='color:#6b7280;margin-bottom:24px;'>Child Development &amp; Education Center</p>"
+                . "<p style='color:#111827;font-size:15px;'>Hello <strong>{$userName}</strong>,</p>"
+                . "<p style='color:#374151;'>Use the one-time code below to sign in. It expires in <strong>10 minutes</strong>.</p>"
+                . "<div style='background:#f5f3ff;border:2px dashed #7c3aed;border-radius:10px;padding:20px;text-align:center;margin:20px 0;'>"
+                . "<span style='font-size:36px;font-weight:800;letter-spacing:10px;color:#7c3aed;'>{$otp}</span>"
+                . "</div>"
+                . "<p style='color:#9ca3af;font-size:12px;'>If you did not request this, please ignore this email.</p>"
+                . "</div>";
+            $mailer->AltBody = "Your Helping Hands OTP is: {$otp}. It expires in 10 minutes.";
+            $mailer->send();
 
-            return ApiResponse::success(null, 'If this email exists, an OTP has been sent.');
+            return ApiResponse::success(null, 'OTP sent to ' . $email);
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
+        } catch (\Throwable $e) {
+            Log::error('OTP email failed', ['error' => $e->getMessage()]);
+            return ApiResponse::error('Failed to send OTP email. Please try again.', 500);
         }
     }
+
 
     public function verifyOtp(Request $request)
     {

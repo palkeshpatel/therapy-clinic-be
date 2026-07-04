@@ -108,6 +108,7 @@ $app->register(Tymon\JWTAuth\Providers\LumenServiceProvider::class);
 
 $app->configure('auth');
 $app->configure('jwt');
+$app->configure('mail');
 
 /*
 |--------------------------------------------------------------------------
