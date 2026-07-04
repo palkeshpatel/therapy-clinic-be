@@ -80,12 +80,13 @@ class LeaveController extends Controller
             ]);
             $leave->load('therapist');
 
-            // ── Email admin: new leave request ──────────────────────────
+            // ── Email admin: new leave request (synchronous) ────────────
             $therapistName = $leave->therapist?->name ?? 'A Therapist';
             $leaveDate     = $leave->leave_date;
             $leaveType     = ucwords(str_replace('_', ' ', $leave->leave_type));
             $reason        = $leave->reason ?? 'No reason provided';
 
+            // Send to real admin Gmail (MAIL_FROM_ADDRESS)
             $adminEmail = env('MAIL_FROM_ADDRESS');
             $adminName  = 'Admin';
 
@@ -117,13 +118,17 @@ class LeaveController extends Controller
                 <p style='color:#6b7280;font-size:13px;'>Please log in to the admin panel to approve or reject this request.</p>
             ");
 
-            MailHelper::sendAsync(
-                $adminEmail,
-                $adminName,
-                "Leave Request from {$therapistName} — {$leaveDate}",
-                $html,
-                "New leave request from {$therapistName} for {$leaveDate} ({$leaveType}). Reason: {$reason}"
-            );
+            try {
+                MailHelper::send(
+                    $adminEmail,
+                    $adminName,
+                    "[Leave Request] {$therapistName} — {$leaveDate}",
+                    $html,
+                    "New leave request from {$therapistName} for {$leaveDate} ({$leaveType}). Reason: {$reason}"
+                );
+            } catch (\Throwable $mailEx) {
+                \Illuminate\Support\Facades\Log::error('Leave request email failed', ['error' => $mailEx->getMessage()]);
+            }
             // ────────────────────────────────────────────────────────────
 
             return ApiResponse::success($leave, 'Leave applied', 201);
@@ -149,43 +154,45 @@ class LeaveController extends Controller
             $leave->save();
             $leave->load('therapist');
 
-            // ── Email therapist: leave approved or rejected ─────────────
+            // ── Email therapist: leave approved or rejected (synchronous) ─
             if (in_array($newStatus, ['approved', 'rejected'])) {
-                $therapist     = $leave->therapist;
-                $therapistEmail = $therapist?->email;
+                $therapist      = $leave->therapist;
                 $therapistName  = $therapist?->name ?? 'Therapist';
                 $leaveDate      = $leave->leave_date;
                 $leaveType      = ucwords(str_replace('_', ' ', $leave->leave_type));
 
-                if ($therapistEmail) {
-                    $isApproved  = $newStatus === 'approved';
-                    $statusLabel = $isApproved ? 'Approved ✅' : 'Rejected ❌';
-                    $statusColor = $isApproved ? '#16a34a' : '#dc2626';
-                    $statusBg    = $isApproved ? '#f0fdf4' : '#fef2f2';
-                    $message     = $isApproved
-                        ? 'Your leave request has been <strong>approved</strong>. Enjoy your time off!'
-                        : 'Your leave request has been <strong>rejected</strong>. Please contact the admin for more details.';
+                $isApproved  = $newStatus === 'approved';
+                $statusLabel = $isApproved ? 'Approved ✅' : 'Rejected ❌';
+                $statusColor = $isApproved ? '#16a34a' : '#dc2626';
+                $statusBg    = $isApproved ? '#f0fdf4' : '#fef2f2';
+                $message     = $isApproved
+                    ? 'The leave request has been <strong>approved</strong>.'
+                    : 'The leave request has been <strong>rejected</strong>. Please contact the admin for more details.';
 
-                    $html = MailHelper::template("
-                        <p style='color:#111827;font-size:15px;margin-bottom:16px;'>
-                            Hello <strong>{$therapistName}</strong>,
-                        </p>
-                        <p style='color:#374151;'>{$message}</p>
-                        <div style='background:{$statusBg};border-left:4px solid {$statusColor};border-radius:6px;padding:16px 20px;margin:20px 0;'>
-                            <p style='color:{$statusColor};font-weight:700;font-size:16px;margin:0 0 8px;'>{$statusLabel}</p>
-                            <p style='color:#374151;margin:4px 0;'><strong>Date:</strong> {$leaveDate}</p>
-                            <p style='color:#374151;margin:4px 0;'><strong>Type:</strong> {$leaveType}</p>
-                        </div>
-                        <p style='color:#6b7280;font-size:13px;'>If you have any questions, please contact the administration.</p>
-                    ");
+                $html = MailHelper::template("
+                    <p style='color:#111827;font-size:15px;margin-bottom:16px;'>
+                        Hello <strong>Admin</strong>,
+                    </p>
+                    <p style='color:#374151;'>Leave status update for therapist <strong>{$therapistName}</strong>:</p>
+                    <div style='background:{$statusBg};border-left:4px solid {$statusColor};border-radius:6px;padding:16px 20px;margin:20px 0;'>
+                        <p style='color:{$statusColor};font-weight:700;font-size:16px;margin:0 0 8px;'>{$statusLabel}</p>
+                        <p style='color:#374151;margin:4px 0;'><strong>Therapist:</strong> {$therapistName}</p>
+                        <p style='color:#374151;margin:4px 0;'><strong>Date:</strong> {$leaveDate}</p>
+                        <p style='color:#374151;margin:4px 0;'><strong>Type:</strong> {$leaveType}</p>
+                    </div>
+                    <p style='color:#6b7280;font-size:13px;'>This is a confirmation of the leave status update you performed.</p>
+                ");
 
-                    MailHelper::sendAsync(
-                        $therapistEmail,
-                        $therapistName,
-                        "Leave Request {$statusLabel} — {$leaveDate}",
+                try {
+                    MailHelper::send(
+                        env('MAIL_FROM_ADDRESS'),
+                        'Admin',
+                        "[Leave {$statusLabel}] {$therapistName} — {$leaveDate}",
                         $html,
-                        "Your leave request for {$leaveDate} ({$leaveType}) has been {$newStatus}."
+                        "Leave for {$therapistName} on {$leaveDate} ({$leaveType}) has been {$newStatus}."
                     );
+                } catch (\Throwable $mailEx) {
+                    \Illuminate\Support\Facades\Log::error('Leave status email failed', ['error' => $mailEx->getMessage()]);
                 }
             }
             // ────────────────────────────────────────────────────────────
