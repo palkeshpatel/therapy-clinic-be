@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Helpers\ApiResponse;
+use App\Helpers\MailHelper;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,8 +13,6 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use App\Models\User;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\SMTP;
 use Tymon\JWTAuth\Exceptions\JWTException;
 
 class AuthController extends Controller
@@ -75,33 +74,19 @@ class AuthController extends Controller
             // Store OTP in cache for 10 minutes
             Cache::put($cacheKey, $otp, 600);
 
-            // Send OTP email via PHPMailer (synchronous — reliable SMTP delivery)
+            // Send OTP email via MailHelper (synchronous — fast Gmail SMTP)
             $userName = $user->name;
-            $mailer = new PHPMailer(true);
-            $mailer->isSMTP();
-            $mailer->Host       = env('MAIL_HOST', 'smtp.gmail.com');
-            $mailer->SMTPAuth   = true;
-            $mailer->Username   = env('MAIL_USERNAME');
-            $mailer->Password   = env('MAIL_PASSWORD');
-            $mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mailer->Port       = (int) env('MAIL_PORT', 587);
-            $mailer->setFrom(env('MAIL_FROM_ADDRESS'), env('MAIL_FROM_NAME', 'Helping Hands'));
-            $mailer->addAddress($email, $userName);
-            $mailer->isHTML(true);
-            $mailer->Subject = 'Your Helping Hands Login OTP';
-            $mailer->Body    =
-                "<div style='font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;border:1px solid #e5e7eb;border-radius:12px;'>"
-                . "<h2 style='color:#7c3aed;margin-bottom:8px;'>Helping Hands</h2>"
-                . "<p style='color:#6b7280;margin-bottom:24px;'>Child Development &amp; Education Center</p>"
-                . "<p style='color:#111827;font-size:15px;'>Hello <strong>{$userName}</strong>,</p>"
-                . "<p style='color:#374151;'>Use the one-time code below to sign in. It expires in <strong>10 minutes</strong>.</p>"
-                . "<div style='background:#f5f3ff;border:2px dashed #7c3aed;border-radius:10px;padding:20px;text-align:center;margin:20px 0;'>"
-                . "<span style='font-size:36px;font-weight:800;letter-spacing:10px;color:#7c3aed;'>{$otp}</span>"
-                . "</div>"
-                . "<p style='color:#9ca3af;font-size:12px;'>If you did not request this, please ignore this email.</p>"
-                . "</div>";
-            $mailer->AltBody = "Your Helping Hands OTP is: {$otp}. It expires in 10 minutes.";
-            $mailer->send();
+            $html = MailHelper::template("
+                <p style='color:#111827;font-size:15px;'>Hello <strong>{$userName}</strong>,</p>
+                <p style='color:#374151;'>Use the one-time code below to sign in. It expires in <strong>10 minutes</strong>.</p>
+                <div style='background:#f5f3ff;border:2px dashed #7c3aed;border-radius:10px;padding:20px;text-align:center;margin:20px 0;'>
+                    <span style='font-size:36px;font-weight:800;letter-spacing:10px;color:#7c3aed;'>{$otp}</span>
+                </div>
+                <p style='color:#9ca3af;font-size:12px;'>If you did not request this, please ignore this email.</p>
+            ");
+
+            MailHelper::send($email, $userName, 'Your Helping Hands Login OTP', $html,
+                "Your Helping Hands OTP is: {$otp}. It expires in 10 minutes.");
 
             return ApiResponse::success(null, 'OTP sent to ' . $email);
         } catch (ValidationException $e) {
