@@ -54,6 +54,7 @@ class InvoicePdfService
             $i += ($divider == 10) ? 1 : 2;
             if ($number) {
                 $plural = '';
+                $counter = count($str);
                 $hundred = ($counter == 1 && $str[0]) ? ' and ' : null;
                 $str [] = ($number < 21) ? $words[$number] .
                     " " . $digits[$counter] . $plural . " " . $hundred
