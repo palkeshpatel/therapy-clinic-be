@@ -231,6 +231,7 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
     $router->group(['middleware' => ['auth', 'role:admin,therapist']], function () use ($router) {
         $router->get('invoices', 'Api\\V1\\InvoiceController@index');
         $router->get('invoices/{id}', 'Api\\V1\\InvoiceController@show');
+        $router->get('invoices/{id}/pdf', 'Api\\V1\\InvoiceController@downloadPdf');
         $router->get('payments', 'Api\\V1\\PaymentController@index');
     });
     $router->group(['middleware' => ['auth', 'role:admin']], function () use ($router) {

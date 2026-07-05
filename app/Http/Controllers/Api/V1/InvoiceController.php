@@ -125,5 +125,49 @@ class InvoiceController extends Controller
         $invoice->delete();
         return ApiResponse::success(null, 'Invoice deleted');
     }
+
+    public function downloadPdf($id)
+    {
+        $invoice = Invoice::with(['patient', 'items', 'payments'])->find($id);
+
+        if (! $invoice) {
+            return ApiResponse::error('Invoice not found', 404);
+        }
+
+        try {
+            $options = new \Dompdf\Options();
+            $options->set('isHtml5ParserEnabled', true);
+            $options->set('isRemoteEnabled', true);
+            $options->set('isPhpEnabled', false);
+            $options->set('defaultFont', 'DejaVu Sans');
+
+            $dompdf = new \Dompdf\Dompdf($options);
+
+            $logoData = '';
+            $logoPath = public_path('logo.png');
+            if (file_exists($logoPath)) {
+                $logoData = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+            }
+
+            $pdfService = new \App\Services\InvoicePdfService($invoice, $logoData);
+            $html = $pdfService->buildHtml();
+
+            $dompdf->loadHtml($html, 'UTF-8');
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
+
+            $pdfOutput = $dompdf->output();
+
+            $filename = 'invoice_' . str_replace(' ', '_', $invoice->invoice_no) . '_' . date('Ymd') . '.pdf';
+
+            return response($pdfOutput, 200, [
+                'Content-Type'                => 'application/pdf',
+                'Content-Disposition'         => 'attachment; filename="' . $filename . '"',
+                'Access-Control-Expose-Headers' => 'Content-Disposition',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'PDF generation failed: ' . $e->getMessage()], 500);
+        }
+    }
 }
 
