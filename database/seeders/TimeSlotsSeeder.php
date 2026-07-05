@@ -17,9 +17,9 @@ class TimeSlotsSeeder extends Seeder
         DB::table('time_slots')->truncate();
         Schema::enableForeignKeyConstraints();
 
-        // 60-minute slots from 08:00 to 24:00 (client schedule: 8:00 AM – 12:00 AM)
+        // 60-minute slots from 08:00 to 20:00 (client schedule: 8:00 AM – 8:00 PM)
         $currentTime = Carbon::createFromTime(8, 0, 0);
-        $endTimeLimit = Carbon::createFromTime(24, 0, 0);
+        $endTimeLimit = Carbon::createFromTime(20, 0, 0);
 
         while ($currentTime->lessThan($endTimeLimit)) {
             $slotEnd = $currentTime->copy()->addMinutes(60);
