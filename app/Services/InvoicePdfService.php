@@ -52,6 +52,33 @@ class InvoicePdfService
             </tr>';
         }
 
+        // Totals rows aligned inside the main items table
+        $itemsHtml .= '
+        <tr>
+            <td colspan="2" style="border: none; background: transparent;"></td>
+            <td style="padding: 10px; font-size: 13px; color: #475569; border-bottom: 1px solid #e2e8f0; text-align: right; font-family: sans-serif;">Total Billed:</td>
+            <td style="padding: 10px; font-size: 13px; color: #0f172a; font-weight: bold; border-bottom: 1px solid #e2e8f0; text-align: right; font-family: sans-serif;">' . $this->formatCurrency($this->invoice->total_amount) . '</td>
+        </tr>
+        <tr>
+            <td colspan="2" style="border: none; background: transparent;"></td>
+            <td style="padding: 10px; font-size: 13px; color: #16a34a; border-bottom: 1px solid #e2e8f0; text-align: right; font-family: sans-serif;">Collected:</td>
+            <td style="padding: 10px; font-size: 13px; color: #16a34a; font-weight: bold; border-bottom: 1px solid #e2e8f0; text-align: right; font-family: sans-serif;">' . $this->formatCurrency($this->invoice->paid_amount) . '</td>
+        </tr>
+        <tr style="background-color: #fef3c7;">
+            <td colspan="2" style="border: none; background: transparent;"></td>
+            <td style="padding: 10px; font-size: 13px; color: #b45309; font-weight: bold; text-align: right; font-family: sans-serif; border-bottom: 1px solid #f59e0b;">Outstanding Due:</td>
+            <td style="padding: 10px; font-size: 13px; color: #b45309; font-weight: bold; text-align: right; font-family: sans-serif; border-bottom: 1px solid #f59e0b;">' . $this->formatCurrency($dueAmount) . '</td>
+        </tr>';
+
+        $notesHtml = '';
+        if ($this->invoice->notes) {
+            $notesHtml = '
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; font-size: 12px; line-height: 1.5; color: #475569; font-family: sans-serif; margin-top: 25px;">
+                <strong style="color: #334155; display: block; margin-bottom: 5px;">Notes:</strong>
+                ' . nl2br($this->e($this->invoice->notes)) . '
+            </div>';
+        }
+
         return '
         <!DOCTYPE html>
         <html>
@@ -130,34 +157,8 @@ class InvoicePdfService
                     </tbody>
                 </table>
 
-                <!-- Totals Section -->
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 45px;">
-                    <tr>
-                        <td style="width: 55%; vertical-align: top; padding-right: 20px;">
-                            ' . ($this->invoice->notes ? '
-                            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 15px; border-radius: 6px; font-size: 12px; line-height: 1.5; color: #475569; font-family: sans-serif;">
-                                <strong style="color: #334155; display: block; margin-bottom: 5px;">Notes:</strong>
-                                ' . nl2br($this->e($this->invoice->notes)) . '
-                            </div>' : '') . '
-                        </td>
-                        <td style="width: 45%; vertical-align: top;">
-                            <table style="width: 100%; border-collapse: collapse; font-family: sans-serif;">
-                                <tr>
-                                    <td style="padding: 8px 10px; font-size: 13px; color: #475569; border-bottom: 1px solid #f1f5f9; text-align: right;">Total Billed:</td>
-                                    <td style="padding: 8px 10px; font-size: 13px; color: #0f172a; font-weight: bold; border-bottom: 1px solid #f1f5f9; text-align: right;">' . $this->formatCurrency($this->invoice->total_amount) . '</td>
-                                </tr>
-                                <tr>
-                                    <td style="padding: 8px 10px; font-size: 13px; color: #16a34a; border-bottom: 1px solid #f1f5f9; text-align: right;">Collected:</td>
-                                    <td style="padding: 8px 10px; font-size: 13px; color: #16a34a; font-weight: bold; border-bottom: 1px solid #f1f5f9; text-align: right;">' . $this->formatCurrency($this->invoice->paid_amount) . '</td>
-                                </tr>
-                                <tr style="background-color: #fef3c7;">
-                                    <td style="padding: 10px; font-size: 14px; color: #b45309; font-weight: bold; border-bottom: 1px solid #f59e0b; text-align: right; border-top-left-radius: 4px; border-bottom-left-radius: 4px;">Outstanding Due:</td>
-                                    <td style="padding: 10px; font-size: 14px; color: #b45309; font-weight: bold; border-bottom: 1px solid #f59e0b; text-align: right; border-top-right-radius: 4px; border-bottom-right-radius: 4px;">' . $this->formatCurrency($dueAmount) . '</td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
+                <!-- Notes Section -->
+                ' . $notesHtml . '
 
                 <!-- Footer / Thank you -->
                 <div style="text-align: center; border-top: 1px solid #e2e8f0; padding-top: 20px; margin-top: 30px; font-size: 11px; color: #94a3b8; font-family: sans-serif; line-height: 1.5;">
