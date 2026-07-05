@@ -214,10 +214,6 @@ class InvoicePdfService
                                     <td class="text-muted" style="padding-right: 10px; text-align: right;">Billing Month</td>
                                     <td class="text-dark" style="text-align: left;">: &nbsp;' . $this->e($billingMonthLabel) . '</td>
                                 </tr>
-                                <tr>
-                                    <td class="text-muted" style="padding-right: 10px; text-align: right;">Status</td>
-                                    <td class="font-bold" style="color: ' . $statusColor . '; text-align: left; text-transform: uppercase;">: &nbsp;' . $this->e($this->invoice->status) . '</td>
-                                </tr>
                             </table>
                         </td>
                     </tr>
