@@ -53,7 +53,7 @@ class InvoicePdfService
             $no = floor($no / $divider);
             $i += ($divider == 10) ? 1 : 2;
             if ($number) {
-                $plural = (($counter = count($str)) && $number > 9) ? 's' : null;
+                $plural = '';
                 $hundred = ($counter == 1 && $str[0]) ? ' and ' : null;
                 $str [] = ($number < 21) ? $words[$number] .
                     " " . $digits[$counter] . $plural . " " . $hundred
@@ -190,9 +190,9 @@ class InvoicePdfService
                                         
                                         <!-- Address Details -->
                                         <div style="font-size: 11px; color: #475569; line-height: 1.5;">
-                                            <span style="color: #2563a8;">&#128205;</span> 123, Green Street, Ambadod, Gujarat - 380001<br/>
-                                            <span style="color: #2563a8;">&#128222;</span> +91 98765 43210<br/>
-                                            <span style="color: #2563a8;">&#9993;</span> info@helpinghands.com
+                                            Address: 123, Green Street, Ambadod, Gujarat - 380001<br/>
+                                            Phone: +91 98765 43210<br/>
+                                            Email: info@helpinghands.com
                                         </div>
                                     </td>
                                 </tr>
@@ -231,19 +231,11 @@ class InvoicePdfService
                         <td class="valign-top" style="width: 45%; padding-right: 15px;">
                             <h3 style="color: #1a3c5e; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0; margin-bottom: 8px; font-weight: bold;">Bill To</h3>
                             <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; background-color: #ffffff; min-height: 100px;">
-                                <table class="w-100 border-collapse">
-                                    <tr>
-                                        <!-- Avatar Placeholder -->
-                                        <td class="valign-top" style="width: 48px; padding-right: 12px;">
-                                            <div style="height: 40px; width: 40px; border-radius: 50%; background-color: #eff6ff; border: 1px solid #bfdbfe; text-align: center; line-height: 40px; color: #2563a8; font-size: 18px;">&#128100;</div>
-                                        </td>
-                                        <td class="valign-top" style="font-size: 12px; line-height: 1.6; color: #475569;">
-                                            <strong style="font-size: 14px; color: #0f172a; display: block; margin-bottom: 4px;">' . $this->e($patient->patient_name) . '</strong>
-                                            <strong>Patient ID :</strong> ' . $patientIdStr . '<br/>
-                                            <strong>Phone :</strong> ' . $this->e($patient->phone ?? $patient->guardian_phone ?? 'N/A') . '
-                                        </td>
-                                    </tr>
-                                </table>
+                                <div style="font-size: 12px; line-height: 1.6; color: #475569;">
+                                    <strong style="font-size: 15px; color: #0f172a; display: block; margin-bottom: 5px;">' . $this->e($patient->patient_name) . '</strong>
+                                    <strong>Patient ID :</strong> ' . $patientIdStr . '<br/>
+                                    <strong>Phone :</strong> ' . $this->e($patient->phone ?? $patient->guardian_phone ?? 'N/A') . '
+                                </div>
                             </div>
                         </td>
                         
@@ -253,28 +245,24 @@ class InvoicePdfService
                                 <table class="w-100 border-collapse" style="text-align: center; font-size: 10px; line-height: 1.4;">
                                     <tr>
                                         <!-- Card 1 -->
-                                        <td style="width: 25%; border-right: 1px solid #bfdbfe;">
-                                            <div style="font-size: 16px; color: #2563a8; margin-bottom: 3px;">&#128197;</div>
-                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 2px;">Invoice Date</div>
-                                            <div class="text-dark font-bold" style="font-size: 9px;">' . date('d-M-Y', strtotime($this->invoice->invoice_date)) . '</div>
+                                        <td style="width: 25%; border-right: 1px solid #bfdbfe; padding: 5px 0;">
+                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 4px;">Invoice Date</div>
+                                            <div class="text-dark font-bold" style="font-size: 9.5px;">' . date('d-M-Y', strtotime($this->invoice->invoice_date)) . '</div>
                                         </td>
                                         <!-- Card 2 -->
-                                        <td style="width: 25%; border-right: 1px solid #bfdbfe; padding-left: 5px;">
-                                            <div style="font-size: 16px; color: #7c3aed; margin-bottom: 3px;">&#128198;</div>
-                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 2px;">Billing Month</div>
-                                            <div class="text-dark font-bold" style="font-size: 9px;">' . $this->e($billingMonthShort) . '</div>
+                                        <td style="width: 25%; border-right: 1px solid #bfdbfe; padding: 5px 0;">
+                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 4px;">Billing Month</div>
+                                            <div class="text-dark font-bold" style="font-size: 9.5px;">' . $this->e($billingMonthShort) . '</div>
                                         </td>
                                         <!-- Card 3 -->
-                                        <td style="width: 25%; border-right: 1px solid #bfdbfe; padding-left: 5px;">
-                                            <div style="font-size: 16px; color: #16a34a; margin-bottom: 3px;">&#128196;</div>
-                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 2px;">Invoice No</div>
-                                            <div class="text-dark font-bold" style="font-size: 8px;">' . $this->e($this->invoice->invoice_no) . '</div>
+                                        <td style="width: 25%; border-right: 1px solid #bfdbfe; padding: 5px 0;">
+                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 4px;">Invoice No</div>
+                                            <div class="text-dark font-bold" style="font-size: 8.5px;">' . $this->e($this->invoice->invoice_no) . '</div>
                                         </td>
                                         <!-- Card 4 -->
-                                        <td style="width: 25%; padding-left: 5px;">
-                                            <div style="font-size: 16px; color: ' . $statusColor . '; margin-bottom: 3px;">&#8505;</div>
-                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 2px;">Status</div>
-                                            <div class="font-bold" style="font-size: 9px; color: ' . $statusColor . '; text-transform: uppercase;">' . $this->e($this->invoice->status) . '</div>
+                                        <td style="width: 25%; padding: 5px 0;">
+                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 4px;">Status</div>
+                                            <div class="font-bold" style="font-size: 9.5px; color: ' . $statusColor . '; text-transform: uppercase;">' . $this->e($this->invoice->status) . '</div>
                                         </td>
                                     </tr>
                                 </table>
@@ -316,15 +304,15 @@ class InvoicePdfService
                                 <div style="font-size: 11px; color: #1a3c5e; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Payment Details</div>
                                 <table class="border-collapse" style="font-size: 11px; line-height: 1.7; color: #475569;">
                                     <tr>
-                                        <td style="padding-right: 15px; color: #64748b;"><span style="color: #16a34a;">&#128181;</span> Payment Method</td>
+                                        <td style="padding-right: 15px; color: #64748b;">Payment Method</td>
                                         <td class="text-dark font-bold">: &nbsp;' . $this->e($payment ? $payment->payment_method : 'N/A') . '</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding-right: 15px; color: #64748b;"><span style="color: #16a34a;">&#9989;</span> Paid Amount</td>
+                                        <td style="padding-right: 15px; color: #64748b;">Paid Amount</td>
                                         <td class="text-dark font-bold">: &nbsp;' . $this->formatCurrency($payment ? $payment->amount : 0) . '</td>
                                     </tr>
                                     <tr>
-                                        <td style="padding-right: 15px; color: #64748b;"><span style="color: #16a34a;">&#128197;</span> Payment Date</td>
+                                        <td style="padding-right: 15px; color: #64748b;">Payment Date</td>
                                         <td class="text-dark font-bold">: &nbsp;' . $this->e($payment ? date('d-M-Y', strtotime($payment->payment_date)) : 'N/A') . '</td>
                                     </tr>
                                 </table>
@@ -375,7 +363,6 @@ class InvoicePdfService
 
                             <!-- Callout notification bar -->
                             <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 15px; color: #1e40af; font-size: 11px; line-height: 1.4;">
-                                <span style="font-size: 14px; margin-right: 5px; vertical-align: middle;">&#128276;</span>
                                 Please make the payment of the outstanding amount to avoid interruption in services.
                             </div>
                         </td>
@@ -385,9 +372,9 @@ class InvoicePdfService
                 <!-- 6. Footer bar -->
                 <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 12px;" />
                 <div style="text-align: center; font-size: 10px; color: #64748b; line-height: 1.6; padding-bottom: 10px;">
-                    <span style="color: #2563a8;">&#127183;</span> www.helpinghands.com &nbsp;&nbsp;|&nbsp;&nbsp; 
-                    <span style="color: #2563a8;">&#128222;</span> +91 98765 43210 &nbsp;&nbsp;|&nbsp;&nbsp; 
-                    <span style="color: #2563a8;">&#9993;</span> info@helpinghands.com
+                    www.helpinghands.com &nbsp;&nbsp;|&nbsp;&nbsp; 
+                    +91 98765 43210 &nbsp;&nbsp;|&nbsp;&nbsp; 
+                    info@helpinghands.com
                 </div>
             </div>
         </body>
