@@ -284,20 +284,6 @@ class PatientController extends Controller
                                     continue;
                                 }
 
-                                $conflict = \App\Models\DailySchedule::query()
-                                    ->where('therapist_id', $therapistId)
-                                    ->where('slot_id', $slotId)
-                                    ->whereDate('date', $scheduleDate)
-                                    ->whereIn('status', ['scheduled', 'in_progress', 'completed'])
-                                    ->exists();
-
-                                if ($conflict) {
-                                    throw ValidationException::withMessages([
-                                        "therapies.{$index}.schedules.{$scheduleIndex}.slot_id" => [
-                                            'This time slot is already booked for the selected therapist on that date.',
-                                        ],
-                                    ]);
-                                }
 
                                 \App\Models\DailySchedule::create([
                                     'date'         => $scheduleDate,

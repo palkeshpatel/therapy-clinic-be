@@ -81,21 +81,6 @@ class PatientRegistrationService
                             continue;
                         }
 
-                        // Check if slot is already taken for this therapist + date
-                        $conflict = DailySchedule::query()
-                            ->where('therapist_id', $therapistId)
-                            ->where('slot_id', $slotId)
-                            ->whereDate('date', $scheduleDate)
-                            ->whereIn('status', ['scheduled', 'in_progress', 'completed'])
-                            ->exists();
-
-                        if ($conflict) {
-                            throw ValidationException::withMessages([
-                                "therapies.{$index}.schedules.{$scheduleIndex}.slot_id" => [
-                                    'This time slot is already booked for the selected therapist on that date.',
-                                ],
-                            ]);
-                        }
 
                         DailySchedule::create([
                             'date'         => $scheduleDate,
