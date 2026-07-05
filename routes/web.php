@@ -20,6 +20,8 @@ $router->get('/', function () use ($router) {
 $router->get('/clear-cache', 'SystemController@clearCache');
 
 $router->group(['prefix' => 'api/v1'], function () use ($router) {
+    $router->post('mail/send-async', 'SystemController@sendMailAsync');
+
     $router->group(['prefix' => 'auth'], function () use ($router) {
         $router->post('login', 'Api\\V1\\AuthController@login');
         $router->post('otp/send', 'Api\\V1\\AuthController@sendOtp');

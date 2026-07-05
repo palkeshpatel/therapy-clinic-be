@@ -9,7 +9,8 @@ class MailHelper
 {
     /**
      * Send an email asynchronously (fire-and-forget).
-     * Uses register_shutdown_function so HTTP response is returned first.
+     * Fires a cURL request to an internal API endpoint and immediately returns.
+     * The HTTP response is returned to the browser BEFORE the email is sent.
      */
     public static function sendAsync(
         string $toEmail,
@@ -18,19 +19,35 @@ class MailHelper
         string $htmlBody,
         string $textBody = ''
     ): void {
-        register_shutdown_function(function () use ($toEmail, $toName, $subject, $htmlBody, $textBody) {
-            try {
-                if (function_exists('fastcgi_finish_request')) {
-                    fastcgi_finish_request();
-                }
-                self::send($toEmail, $toName, $subject, $htmlBody, $textBody);
-            } catch (\Throwable $e) {
-                Log::error('Async email failed', [
-                    'to'    => $toEmail,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        });
+        try {
+            $appUrl = rtrim((string) env('APP_URL', 'http://localhost:8000'), '/');
+            $url = $appUrl . '/api/v1/mail/send-async';
+
+            $payload = json_encode([
+                'to_email'  => $toEmail,
+                'to_name'   => $toName,
+                'subject'   => $subject,
+                'html_body' => $htmlBody,
+                'text_body' => $textBody,
+            ]);
+
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_POST, true);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Accept: application/json',
+            ]);
+            // Fire-and-forget: timeout instantly so we do NOT wait for the response
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+            curl_setopt($ch, CURLOPT_TIMEOUT_MS, 200);   // only wait 200ms max to establish connection
+            curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            @curl_exec($ch);
+            curl_close($ch);
+        } catch (\Throwable $e) {
+            Log::error('MailHelper::sendAsync cURL failed', ['error' => $e->getMessage()]);
+        }
     }
 
     /**
