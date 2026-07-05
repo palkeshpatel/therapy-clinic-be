@@ -203,15 +203,15 @@ class InvoicePdfService
                             <h1 style="font-size: 32px; color: #1a3c5e; text-transform: uppercase; margin: 0 0 10px 0; letter-spacing: 1px; font-weight: bold;">INVOICE</h1>
                             <table class="border-collapse" style="float: right; font-size: 12px; line-height: 1.6;">
                                 <tr>
-                                    <td class="text-muted" style="padding-right: 10px; text-align: right;">Invoice No</td>
+                                    <td class="text-muted" style="padding-right: 10px; text-align: left;">Invoice No</td>
                                     <td class="text-dark font-bold" style="text-align: left;">: &nbsp;' . $this->e($this->invoice->invoice_no) . '</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted" style="padding-right: 10px; text-align: right;">Invoice Date</td>
+                                    <td class="text-muted" style="padding-right: 10px; text-align: left;">Invoice Date</td>
                                     <td class="text-dark" style="text-align: left;">: &nbsp;' . date('d-M-Y', strtotime($this->invoice->invoice_date)) . '</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted" style="padding-right: 10px; text-align: right;">Billing Month</td>
+                                    <td class="text-muted" style="padding-right: 10px; text-align: left;">Billing Month</td>
                                     <td class="text-dark" style="text-align: left;">: &nbsp;' . $this->e($billingMonthLabel) . '</td>
                                 </tr>
                             </table>
