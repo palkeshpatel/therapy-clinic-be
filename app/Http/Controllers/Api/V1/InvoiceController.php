@@ -16,7 +16,7 @@ class InvoiceController extends Controller
         $perPage = (int) ($request->input('per_page', 15));
         $perPage = max(1, min(100, $perPage));
 
-        $query = Invoice::query()->with(['patient', 'items']);
+        $query = Invoice::query()->with(['patient', 'items', 'payments']);
 
         if ($patientId = $request->input('patient_id')) {
             $query->where('patient_id', $patientId);
