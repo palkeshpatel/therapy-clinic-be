@@ -18,9 +18,12 @@ class TimeSlotsSeeder extends Seeder
         Schema::enableForeignKeyConstraints();
 
         $testSlot = env('TIME_SLOT_TEST');
-        $endHour = (app()->environment('local') && $testSlot == '24') ? 24 : 20;
+        $isTest24 = (app()->environment('local') && $testSlot == '24');
 
-        $currentTime = Carbon::today()->addHours(8); // 08:00
+        $startHour = $isTest24 ? 0 : 8;
+        $endHour = $isTest24 ? 24 : 20;
+
+        $currentTime = Carbon::today()->addHours($startHour);
         $endTimeLimit = Carbon::today()->addHours($endHour);
 
         while ($currentTime->lessThan($endTimeLimit)) {
