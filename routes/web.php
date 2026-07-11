@@ -192,6 +192,7 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->get('time-slots', 'Api\\V1\\TimeSlotController@index');
         $router->get('scheduling/daily', 'Api\\V1\\SchedulingController@daily');
         $router->get('scheduling/availability', 'Api\\V1\\SchedulingController@availability');
+        $router->get('scheduling/bulk-availability', 'Api\\V1\\SchedulingController@bulkAvailability');
         $router->get('waiting-list', 'Api\\V1\\WaitingListController@index');
         $router->put('scheduling/daily/{id}', 'Api\\V1\\SchedulingController@update');
     });

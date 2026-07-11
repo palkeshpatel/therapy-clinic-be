@@ -230,6 +230,72 @@ class SchedulingController extends Controller
         }
     }
 
+    /**
+     * Check therapist availability for every day in a month for a given slot.
+     * GET /scheduling/bulk-availability?therapist_id=1&month=2026-07&slot_id=3
+     */
+    public function bulkAvailability(Request $request)
+    {
+        try {
+            $this->validate($request, [
+                'therapist_id' => ['required', 'integer', 'exists:therapists,id'],
+                'month'        => ['required', 'string', 'regex:/^\d{4}-\d{2}$/'],
+                'slot_id'      => ['nullable', 'integer'],
+            ]);
+
+            $therapistId = (int) $request->input('therapist_id');
+            $month       = (string) $request->input('month');
+            $slotId      = $request->input('slot_id') ? (int) $request->input('slot_id') : null;
+
+            [$year, $mon] = explode('-', $month);
+            $daysInMonth = cal_days_in_month(CAL_GREGORIAN, (int)$mon, (int)$year);
+
+            // Load all blocked/booked slot_ids for this therapist in this entire month at once
+            $blockedByDate = TherapistSchedule::query()
+                ->where('therapist_id', $therapistId)
+                ->whereYear('date', $year)
+                ->whereMonth('date', (int)$mon)
+                ->whereIn('status', ['busy', 'leave'])
+                ->get(['date', 'slot_id'])
+                ->groupBy(fn ($r) => substr($r->date, 0, 10));
+
+            $bookedByDate = DailySchedule::query()
+                ->where('therapist_id', $therapistId)
+                ->whereYear('date', $year)
+                ->whereMonth('date', (int)$mon)
+                ->whereIn('status', ['scheduled', 'in_progress', 'completed'])
+                ->get(['date', 'slot_id'])
+                ->groupBy(fn ($r) => substr($r->date, 0, 10));
+
+            $totalSlots = TimeSlot::where('is_active', true)->count();
+            $today      = now()->toDateString();
+            $result     = [];
+
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $dateStr = $year . '-' . str_pad($mon, 2, '0', STR_PAD_LEFT) . '-' . str_pad($day, 2, '0', STR_PAD_LEFT);
+
+                if ($dateStr <= $today) {
+                    $result[$dateStr] = 'past';
+                    continue;
+                }
+
+                $blockedSlots = collect($blockedByDate->get($dateStr, collect()))->pluck('slot_id')->toArray();
+                $bookedSlots  = collect($bookedByDate->get($dateStr, collect()))->pluck('slot_id')->toArray();
+                $unavailable  = array_unique(array_merge($blockedSlots, $bookedSlots));
+
+                if ($slotId) {
+                    $result[$dateStr] = in_array($slotId, $unavailable, true) ? 'unavailable' : 'available';
+                } else {
+                    $result[$dateStr] = (count($unavailable) < $totalSlots) ? 'available' : 'unavailable';
+                }
+            }
+
+            return ApiResponse::success($result, 'OK');
+        } catch (ValidationException $e) {
+            return ApiResponse::error('Validation failed', 422, $e->errors());
+        }
+    }
+
     private function myTherapistIdIfTherapist(): ?int
     {
         $user = Auth::user();
