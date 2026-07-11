@@ -6,6 +6,20 @@ use App\Models\PatientIntake;
 
 class IntakePdfService
 {
+    private function formatNameAge(?string $jsonOrString): string
+    {
+        if (!$jsonOrString) return '';
+        $decoded = json_decode($jsonOrString, true);
+        if (is_array($decoded)) {
+            $name = $decoded['name'] ?? '';
+            $age = $decoded['age'] ?? '';
+            if ($name && $age) return $this->e($name . ' (' . $age . ' yrs)');
+            if ($name) return $this->e($name);
+            if ($age) return $this->e($age . ' yrs');
+            return '';
+        }
+        return $this->e($jsonOrString);
+    }
     private PatientIntake $intake;
     private string $logoData = '';
 

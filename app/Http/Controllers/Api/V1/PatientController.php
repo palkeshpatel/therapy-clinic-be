@@ -41,6 +41,12 @@ class PatientController extends Controller
             $query->doesntHave('intake');
         }
 
+        if ($request->boolean('with_intake')) {
+            $query->with(['intake' => function($q) {
+                $q->select('id', 'patient_id', 'status');
+            }]);
+        }
+
         $allowedStatuses = ['active', 'inactive', 'discharged'];
         if ($request->filled('status')) {
             $raw = $request->input('status');
