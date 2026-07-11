@@ -254,5 +254,105 @@ class DemoDataSeeder extends Seeder
                 ]);
             }
         }
+
+        // ════════════════════════════════════════════════════════
+        // 8. PATIENT INTAKE FORMS + PEDIGREE DATA
+        // ════════════════════════════════════════════════════════
+        $intakesDemo = [
+            [
+                'patient_idx' => 0, // Aarav Kumar
+                'intake' => [
+                    'status' => 'draft',
+                    'date_of_assessment' => $now->toDateString(),
+                    'child_name' => 'Aarav Kumar',
+                    'gender' => 'male',
+                    'dob' => '2017-03-15',
+                    'address' => 'Koramangala, Bengaluru',
+                    'email' => 'aarav.k@example.com',
+                    'father_name' => 'Rajesh Kumar',
+                    'father_phone' => '9900001001',
+                    'natal_mother_age' => 30,
+                    'natal_mother_name_age' => json_encode(['name' => 'Sunita Kumar', 'age' => '32']),
+                    'natal_father_name_age' => json_encode(['name' => 'Rajesh Kumar', 'age' => '36']),
+                    'child_nicu_admission' => 'No',
+                    'child_birth_cry' => 'Present',
+                    'child_jaundice' => 'Absent',
+                    'child_convulsions' => 'Absent',
+                    'child_birth_asphyxia' => 'Absent',
+                    'family_remark' => 'Sister has speech delay. Paternal uncle has ADHD.',
+                    'pedigree_remarks' => 'Genetic screening recommended for speech delay.',
+                ],
+                'pedigree' => [
+                    ['id' => 'patient', 'relation' => 'patient', 'relationLabel' => 'Patient', 'name' => 'Aarav Kumar', 'gender' => 'male', 'age' => '8', 'living' => true, 'status' => 'Normal', 'condition' => '', 'notes' => ''],
+                    ['id' => 'father', 'relation' => 'father', 'relationLabel' => 'Father', 'name' => 'Rajesh Kumar', 'gender' => 'male', 'age' => '36', 'living' => true, 'status' => 'Normal', 'condition' => '', 'notes' => ''],
+                    ['id' => 'mother', 'relation' => 'mother', 'relationLabel' => 'Mother', 'name' => 'Sunita Kumar', 'gender' => 'female', 'age' => '32', 'living' => true, 'status' => 'Normal', 'condition' => '', 'notes' => ''],
+                    ['id' => 'sister_0', 'relation' => 'sister', 'relationLabel' => 'Sister', 'name' => 'Riya Kumar', 'gender' => 'female', 'age' => '5', 'living' => true, 'status' => 'Affected', 'condition' => 'Speech Delay', 'notes' => ''],
+                    ['id' => 'p_grandfather', 'relation' => 'p_grandfather', 'relationLabel' => "Father's Father (GF)", 'name' => 'Ramesh Kumar', 'gender' => 'male', 'age' => '68', 'living' => true, 'status' => 'Normal', 'condition' => '', 'notes' => ''],
+                    ['id' => 'p_grandmother', 'relation' => 'p_grandmother', 'relationLabel' => "Father's Mother (GM)", 'name' => 'Kiran Kumar', 'gender' => 'female', 'age' => '62', 'living' => true, 'status' => 'Normal', 'condition' => '', 'notes' => ''],
+                    ['id' => 'p_uncle_0', 'relation' => 'p_uncle', 'relationLabel' => "Father's Brother (Uncle)", 'name' => 'Suresh Kumar', 'gender' => 'male', 'age' => '34', 'living' => true, 'status' => 'Affected', 'condition' => 'ADHD', 'notes' => '']
+                ]
+            ],
+            [
+                'patient_idx' => 1, // Meera Reddy
+                'intake' => [
+                    'status' => 'draft',
+                    'date_of_assessment' => $now->toDateString(),
+                    'child_name' => 'Meera Reddy',
+                    'gender' => 'female',
+                    'dob' => '2016-08-22',
+                    'address' => 'Indiranagar, Bengaluru',
+                    'email' => 'meera.r@example.com',
+                    'father_name' => 'Venkat Reddy',
+                    'father_phone' => '9900001002',
+                    'natal_mother_age' => 28,
+                    'natal_mother_name_age' => json_encode(['name' => 'Lakshmi Reddy', 'age' => '35']),
+                    'natal_father_name_age' => json_encode(['name' => 'Venkat Reddy', 'age' => '40']),
+                    'child_nicu_admission' => 'No',
+                    'child_birth_cry' => 'Present',
+                    'child_jaundice' => 'Absent',
+                    'child_convulsions' => 'Absent',
+                    'child_birth_asphyxia' => 'Absent',
+                    'family_remark' => 'Mother affected by ADHD. Maternal grandfather is a carrier.',
+                    'pedigree_remarks' => 'Monitor patient for attention span difficulties.',
+                ],
+                'pedigree' => [
+                    ['id' => 'patient', 'relation' => 'patient', 'relationLabel' => 'Patient', 'name' => 'Meera Reddy', 'gender' => 'female', 'age' => '9', 'living' => true, 'status' => 'Normal', 'condition' => '', 'notes' => ''],
+                    ['id' => 'father', 'relation' => 'father', 'relationLabel' => 'Father', 'name' => 'Venkat Reddy', 'gender' => 'male', 'age' => '40', 'living' => true, 'status' => 'Normal', 'condition' => '', 'notes' => ''],
+                    ['id' => 'mother', 'relation' => 'mother', 'relationLabel' => 'Mother', 'name' => 'Lakshmi Reddy', 'gender' => 'female', 'age' => '35', 'living' => true, 'status' => 'Affected', 'condition' => 'ADHD', 'notes' => ''],
+                    ['id' => 'brother_0', 'relation' => 'brother', 'relationLabel' => 'Brother', 'name' => 'Arjun Reddy', 'gender' => 'male', 'age' => '7', 'living' => true, 'status' => 'Normal', 'condition' => '', 'notes' => ''],
+                    ['id' => 'm_grandfather', 'relation' => 'm_grandfather', 'relationLabel' => "Mother's Father (GF)", 'name' => 'Kalyan Reddy', 'gender' => 'male', 'age' => '70', 'living' => true, 'status' => 'Carrier', 'condition' => '', 'notes' => ''],
+                    ['id' => 'm_grandmother', 'relation' => 'm_grandmother', 'relationLabel' => "Mother's Mother (GM)", 'name' => 'Sita Reddy', 'gender' => 'female', 'age' => '65', 'living' => true, 'status' => 'Normal', 'condition' => '', 'notes' => '']
+                ]
+            ]
+        ];
+
+        foreach ($intakesDemo as $demo) {
+            $patientId = $patientIds[$demo['patient_idx']] ?? null;
+            if (! $patientId) {
+                continue;
+            }
+
+            // Create or get intake form
+            $intakeId = DB::table('patient_intakes')->where('patient_id', $patientId)->value('id');
+            if (! $intakeId) {
+                $intakeData = array_merge($demo['intake'], [
+                    'patient_id' => $patientId,
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ]);
+                $intakeId = DB::table('patient_intakes')->insertGetId($intakeData);
+            }
+
+            // Seed pedigree JSON data
+            $hasPedigree = DB::table('patient_pedigrees')->where('patient_intake_id', $intakeId)->exists();
+            if (! $hasPedigree) {
+                DB::table('patient_pedigrees')->insert([
+                    'patient_intake_id' => $intakeId,
+                    'family_data' => json_encode($demo['pedigree']),
+                    'created_at' => $now,
+                    'updated_at' => $now
+                ]);
+            }
+        }
     }
 }

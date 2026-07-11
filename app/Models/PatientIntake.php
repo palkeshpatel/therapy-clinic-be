@@ -8,6 +8,8 @@ class PatientIntake extends Model
 {
     protected $table = 'patient_intakes';
 
+    protected $appends = ['pedigree_data'];
+
     protected $fillable = [
         'patient_id',
         'date_of_assessment',
@@ -285,5 +287,20 @@ class PatientIntake extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class, 'patient_id');
+    }
+
+    public function logs()
+    {
+        return $this->hasMany(PatientIntakeLog::class, 'intake_id');
+    }
+
+    public function pedigree()
+    {
+        return $this->hasOne(PatientPedigree::class);
+    }
+
+    public function getPedigreeDataAttribute()
+    {
+        return $this->pedigree ? $this->pedigree->family_data : null;
     }
 }

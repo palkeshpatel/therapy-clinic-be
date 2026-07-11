@@ -44,7 +44,7 @@ class PatientIntakeController extends Controller
 
     public function show($id)
     {
-        $intake = PatientIntake::with(['patient'])->find($id);
+        $intake = PatientIntake::with(['patient', 'pedigree'])->find($id);
 
         if (! $intake) {
             return ApiResponse::error('Intake form not found', 404);
@@ -110,12 +110,19 @@ class PatientIntakeController extends Controller
             $this->validate($request, $rules);
 
             // Fetch all request inputs except system columns that shouldn't change easily unless needed
-            $updateData = $request->except(['id', 'created_at', 'updated_at']);
+            $updateData = $request->except(['id', 'created_at', 'updated_at', 'pedigree_data']);
 
             // Eloquent automatically handles JSON serialization because of model casting
             $intake->update($updateData);
 
-            return ApiResponse::success($intake, 'Intake form updated successfully');
+            if ($request->has('pedigree_data')) {
+                $intake->pedigree()->updateOrCreate(
+                    ['patient_intake_id' => $intake->id],
+                    ['family_data' => $request->input('pedigree_data')]
+                );
+            }
+
+            return ApiResponse::success($intake->load('pedigree'), 'Intake form updated successfully');
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
         }

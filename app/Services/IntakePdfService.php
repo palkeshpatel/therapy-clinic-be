@@ -484,9 +484,9 @@ class IntakePdfService
             </tr>
             <tr>
                 <td class="label">Mother Name &amp; Age</td>
-                <td class="value">' . $this->e($i->natal_mother_name_age) . '</td>
+                <td class="value">' . $this->formatNameAge($i->natal_mother_name_age) . '</td>
                 <td class="label">Father Name &amp; Age</td>
-                <td class="value">' . $this->e($i->natal_father_name_age) . '</td>
+                <td class="value">' . $this->formatNameAge($i->natal_father_name_age) . '</td>
             </tr>
             <tr>
                 <td class="label">Delivery Place / Type</td>
@@ -667,6 +667,18 @@ class IntakePdfService
         $famRemark      = $i->family_remark   ? '<tr><td class="label">Family Summary</td><td class="value" colspan="3">' . $this->e($i->family_remark) . '</td></tr>' : '';
         $pedigreeRemark = $i->pedigree_remarks ? '<div class="remarks-block"><strong>&#128204; Pedigree Remarks:</strong> ' . $this->e($i->pedigree_remarks) . '</div>' : '';
 
+        $pedigreeData = $this->buildPedigreeSvg();
+        if (is_array($pedigreeData)) {
+            $svgStr = $pedigreeData['svg'];
+            $w = $pedigreeData['width'];
+            $h = $pedigreeData['height'];
+            $pedigreeHtml = '<div class="pedigree-box" style="text-align:center;margin:10px 0;">
+                <img src="data:image/svg+xml;base64,' . base64_encode($svgStr) . '" width="' . $w . '" height="' . $h . '" style="display:inline-block;" />
+            </div>';
+        } else {
+            $pedigreeHtml = $pedigreeData;
+        }
+
         return $this->sectionTitle(6, 'Family &amp; Pedigree History') . '
         <table class="info-table">
             <tr>
@@ -689,125 +701,528 @@ class IntakePdfService
         </table>
 
         <div class="sub-title">Pedigree Tree Chart</div>
-        <div class="pedigree-box">' . $this->buildPedigreeSvg() . '</div>
+        <div class="pedigree-box">' . $pedigreeHtml . '</div>
         ' . $pedigreeRemark;
     }
 
-    private function buildPedigreeSvg(): string
+    private function buildPedigreeSvg(): array
     {
         $i = $this->intake;
-        $pedigreeData = $this->arr($i->pedigree_chart_data);
+        $pedigree = $i->pedigree;
+        if (!$pedigree || !$pedigree->family_data) {
+            return [
+                'svg' => '<svg width="520" height="200" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg"><rect width="520" height="200" fill="#f8fafc" rx="8" stroke="#e2e8f0"/><text x="260" y="100" text-anchor="middle" font-size="12" fill="#94a3b8">No pedigree chart data recorded.</text></svg>',
+                'width' => 520,
+                'height' => 200
+            ];
+        }
 
-        $nodes = [
-            ['id'=>'I-1',   'label'=>'1','type'=>'male',  'cx'=>160,'cy'=>50],
-            ['id'=>'I-2',   'label'=>'2','type'=>'female','cx'=>240,'cy'=>50],
-            ['id'=>'I-3',   'label'=>'3','type'=>'male',  'cx'=>480,'cy'=>50],
-            ['id'=>'I-4',   'label'=>'4','type'=>'female','cx'=>560,'cy'=>50],
-            ['id'=>'II-1',  'label'=>'1','type'=>'male',  'cx'=>70, 'cy'=>140],
-            ['id'=>'II-2',  'label'=>'2','type'=>'female','cx'=>140,'cy'=>140],
-            ['id'=>'II-3',  'label'=>'3','type'=>'male',  'cx'=>210,'cy'=>140],
-            ['id'=>'II-4',  'label'=>'4','type'=>'female','cx'=>280,'cy'=>140],
-            ['id'=>'II-5',  'label'=>'5','type'=>'female','cx'=>440,'cy'=>140],
-            ['id'=>'II-6',  'label'=>'6','type'=>'male',  'cx'=>510,'cy'=>140],
-            ['id'=>'II-7',  'label'=>'7','type'=>'female','cx'=>580,'cy'=>140],
-            ['id'=>'III-1', 'label'=>'1','type'=>'female','cx'=>75, 'cy'=>240],
-            ['id'=>'III-2', 'label'=>'2','type'=>'male',  'cx'=>155,'cy'=>240],
-            ['id'=>'III-3', 'label'=>'3','type'=>'female','cx'=>235,'cy'=>240],
-            ['id'=>'III-4', 'label'=>'4','type'=>'male',  'cx'=>315,'cy'=>240],
-            ['id'=>'III-5', 'label'=>'5','type'=>'female','cx'=>395,'cy'=>240],
-            ['id'=>'III-6', 'label'=>'6','type'=>'female','cx'=>475,'cy'=>240],
-            ['id'=>'III-7', 'label'=>'7','type'=>'male',  'cx'=>555,'cy'=>240],
-            ['id'=>'III-8', 'label'=>'8','type'=>'unborn','cx'=>635,'cy'=>240],
-            ['id'=>'IV-1',  'label'=>'1','type'=>'female','cx'=>235,'cy'=>340],
-            ['id'=>'IV-2',  'label'=>'2','type'=>'male',  'cx'=>315,'cy'=>340],
-            ['id'=>'IV-3',  'label'=>'3','type'=>'female','cx'=>395,'cy'=>340],
-        ];
+        $members = json_decode($pedigree->family_data, true);
+        if (!is_array($members) || empty($members)) {
+            return [
+                'svg' => '<svg width="520" height="200" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg"><rect width="520" height="200" fill="#f8fafc" rx="8" stroke="#e2e8f0"/><text x="260" y="100" text-anchor="middle" font-size="12" fill="#94a3b8">No pedigree chart data recorded.</text></svg>',
+                'width' => 520,
+                'height' => 200
+            ];
+        }
 
-        $shapes = '';
-        foreach ($nodes as $node) {
-            $state      = $pedigreeData[$node['id']] ?? ['status'=>'normal','condition'=>''];
-            $status     = $state['status'] ?? 'normal';
-            $condition  = $state['condition'] ?? '';
-            $isAffected = $status === 'affected';
-            $isCarrier  = $status === 'carrier';
-            $isUnborn   = $node['type'] === 'unborn' || $status === 'unborn';
-            $cx = $node['cx']; $cy = $node['cy'];
-            $fill   = $isAffected ? self::PRIMARY : '#ffffff';
-            $stroke = self::PRIMARY_LIGHT;
-            $tColor = $isAffected ? '#ffffff' : self::PRIMARY;
+        // Layout settings
+        $Y_G1 = 50;  
+        $Y_G2 = 180; 
+        $Y_G3 = 310; 
+        $Y_G4 = 440; 
 
-            if ($isUnborn) {
-                $shapes .= '<polygon points="' . $cx . ',' . ($cy-18) . ' ' . ($cx+18) . ',' . $cy . ' ' . $cx . ',' . ($cy+18) . ' ' . ($cx-18) . ',' . $cy . '" fill="' . $fill . '" stroke="' . $stroke . '" stroke-width="2"/>';
-            } elseif ($node['type'] === 'male') {
-                $shapes .= '<rect x="' . ($cx-18) . '" y="' . ($cy-18) . '" width="36" height="36" rx="3" fill="' . $fill . '" stroke="' . $stroke . '" stroke-width="2"/>';
-            } else {
-                $shapes .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="18" fill="' . $fill . '" stroke="' . $stroke . '" stroke-width="2"/>';
+        // Extract individuals
+        $patient = null;
+        $father = null;
+        $mother = null;
+        $pGrandfather = null;
+        $pGrandmother = null;
+        $mGrandfather = null;
+        $mGrandmother = null;
+        $spouse = null;
+
+        $siblings = [];
+        $pUnclesAunts = [];
+        $mUnclesAunts = [];
+        $children = [];
+
+        foreach ($members as $m) {
+            if ($m['id'] === 'patient') $patient = $m;
+            elseif ($m['id'] === 'father') $father = $m;
+            elseif ($m['id'] === 'mother') $mother = $m;
+            elseif ($m['id'] === 'p_grandfather') $pGrandfather = $m;
+            elseif ($m['id'] === 'p_grandmother') $pGrandmother = $m;
+            elseif ($m['id'] === 'm_grandfather') $mGrandfather = $m;
+            elseif ($m['id'] === 'm_grandmother') $mGrandmother = $m;
+            elseif ($m['id'] === 'spouse') $spouse = $m;
+            elseif ($m['relation'] === 'brother' || $m['relation'] === 'sister') $siblings[] = $m;
+            elseif ($m['relation'] === 'p_uncle' || $m['relation'] === 'p_aunt') $pUnclesAunts[] = $m;
+            elseif ($m['relation'] === 'm_uncle' || $m['relation'] === 'm_aunt') $mUnclesAunts[] = $m;
+            elseif ($m['relation'] === 'son' || $m['relation'] === 'daughter') $children[] = $m;
+        }
+
+        if (!$patient) {
+            return [
+                'svg' => '<svg width="520" height="200" viewBox="0 0 520 200" xmlns="http://www.w3.org/2000/svg"><rect width="520" height="200" fill="#f8fafc" rx="8" stroke="#e2e8f0"/><text x="260" y="100" text-anchor="middle" font-size="12" fill="#94a3b8">Patient node missing in pedigree tree.</text></svg>',
+                'width' => 520,
+                'height' => 200
+            ];
+        }
+
+        $nodes = [];
+        $edges = [];
+
+        // 1. Position Patient & Siblings (Generation 3)
+        $allSiblings = array_merge($siblings, [$patient]);
+        $totalSiblings = count($allSiblings);
+        foreach ($allSiblings as $index => $sib) {
+            $defaultX = ($index - ($totalSiblings - 1) / 2) * 130;
+            $nodes[$sib['id']] = [
+                'id' => $sib['id'],
+                'x' => isset($sib['x']) ? $sib['x'] : $defaultX,
+                'y' => isset($sib['y']) ? $sib['y'] : $Y_G3,
+                'gender' => $sib['gender'],
+                'relation' => $sib['relation'],
+                'name' => $sib['name'] ?: $sib['relationLabel'],
+                'status' => $sib['status'],
+                'living' => $sib['living'],
+                'condition' => $sib['condition'] ?? ''
+            ];
+        }
+
+        $patientX = $nodes['patient']['x'];
+        $patientY = $nodes['patient']['y'];
+
+        // 2. Position Parents (Generation 2)
+        $fatherX = $father && isset($father['x']) ? $father['x'] : -70;
+        $fatherY = $father && isset($father['y']) ? $father['y'] : $Y_G2;
+        $motherX = $mother && isset($mother['x']) ? $mother['x'] : 70;
+        $motherY = $mother && isset($mother['y']) ? $mother['y'] : $Y_G2;
+
+        if ($father) {
+            $nodes['father'] = [
+                'id' => 'father',
+                'x' => $fatherX,
+                'y' => $fatherY,
+                'gender' => $father['gender'],
+                'relation' => 'father',
+                'name' => $father['name'] ?: $father['relationLabel'],
+                'status' => $father['status'],
+                'living' => $father['living'],
+                'condition' => $father['condition'] ?? ''
+            ];
+        }
+        if ($mother) {
+            $nodes['mother'] = [
+                'id' => 'mother',
+                'x' => $motherX,
+                'y' => $motherY,
+                'gender' => $mother['gender'],
+                'relation' => 'mother',
+                'name' => $mother['name'] ?: $mother['relationLabel'],
+                'status' => $mother['status'],
+                'living' => $mother['living'],
+                'condition' => $mother['condition'] ?? ''
+            ];
+        }
+
+        // Marriage Node for Parents
+        if ($father && $mother) {
+            $mx = ($fatherX + $motherX) / 2 + 20;
+            $my = ($fatherY + $motherY) / 2 + 20;
+            $nodes['m_parents'] = [
+                'id' => 'm_parents',
+                'type' => 'marriage',
+                'x' => $mx,
+                'y' => $my
+            ];
+            $edges[] = ['source' => 'father', 'sh' => 'right', 'target' => 'm_parents', 'th' => 'left', 'type' => 'straight'];
+            $edges[] = ['source' => 'mother', 'sh' => 'left', 'target' => 'm_parents', 'th' => 'right', 'type' => 'straight'];
+            foreach ($allSiblings as $sib) {
+                $edges[] = ['source' => 'm_parents', 'sh' => 'bottom', 'target' => $sib['id'], 'th' => 'top', 'type' => 'step'];
             }
-            if ($isCarrier) {
-                $shapes .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="5" fill="' . self::PRIMARY . '"/>';
-            }
-            $shapes .= '<text x="' . $cx . '" y="' . ($cy+5) . '" text-anchor="middle" font-size="10" font-weight="bold" fill="' . $tColor . '">' . htmlspecialchars($node['label'], ENT_QUOTES, 'UTF-8') . '</text>';
-            $shapes .= '<text x="' . $cx . '" y="' . ($cy+30) . '" text-anchor="middle" font-size="7.5" fill="' . self::TEXT_LIGHT . '">' . htmlspecialchars($node['id'], ENT_QUOTES, 'UTF-8') . '</text>';
-            if (!empty($condition)) {
-                $shapes .= '<text x="' . $cx . '" y="' . ($cy+40) . '" text-anchor="middle" font-size="6.5" fill="' . self::DANGER . '" font-weight="bold">' . htmlspecialchars(substr($condition, 0, 10), ENT_QUOTES, 'UTF-8') . '</text>';
+        } else {
+            $activeParentId = $father ? 'father' : ($mother ? 'mother' : null);
+            if ($activeParentId) {
+                foreach ($allSiblings as $sib) {
+                    $edges[] = ['source' => $activeParentId, 'sh' => 'bottom', 'target' => $sib['id'], 'th' => 'top', 'type' => 'step'];
+                }
             }
         }
 
-        return '<svg width="520" height="290" viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
+        // 3. Paternal Uncles & Aunts (Left of Father)
+        foreach ($pUnclesAunts as $index => $ua) {
+            $defaultX = $fatherX - 120 - ($index * 110);
+            $nodes[$ua['id']] = [
+                'id' => $ua['id'],
+                'x' => isset($ua['x']) ? $ua['x'] : $defaultX,
+                'y' => isset($ua['y']) ? $ua['y'] : $Y_G2,
+                'gender' => $ua['gender'],
+                'relation' => $ua['relation'],
+                'name' => $ua['name'] ?: $ua['relationLabel'],
+                'status' => $ua['status'],
+                'living' => $ua['living'],
+                'condition' => $ua['condition'] ?? ''
+            ];
+        }
+
+        // 4. Maternal Uncles & Aunts (Right of Mother)
+        foreach ($mUnclesAunts as $index => $ua) {
+            $defaultX = $motherX + 120 + ($index * 110);
+            $nodes[$ua['id']] = [
+                'id' => $ua['id'],
+                'x' => isset($ua['x']) ? $ua['x'] : $defaultX,
+                'y' => isset($ua['y']) ? $ua['y'] : $Y_G2,
+                'gender' => $ua['gender'],
+                'relation' => $ua['relation'],
+                'name' => $ua['name'] ?: $ua['relationLabel'],
+                'status' => $ua['status'],
+                'living' => $ua['living'],
+                'condition' => $ua['condition'] ?? ''
+            ];
+        }
+
+        // 5. Paternal Grandparents (Generation 1)
+        if ($pGrandfather || $pGrandmother) {
+            $gfX = $pGrandfather && isset($pGrandfather['x']) ? $pGrandfather['x'] : ($fatherX - 80);
+            $gfY = $pGrandfather && isset($pGrandfather['y']) ? $pGrandfather['y'] : $Y_G1;
+            $gmX = $pGrandmother && isset($pGrandmother['x']) ? $pGrandmother['x'] : ($fatherX + 20);
+            $gmY = $pGrandmother && isset($pGrandmother['y']) ? $pGrandmother['y'] : $Y_G1;
+
+            if ($pGrandfather) {
+                $nodes['p_grandfather'] = [
+                    'id' => 'p_grandfather',
+                    'x' => $gfX,
+                    'y' => $gfY,
+                    'gender' => $pGrandfather['gender'],
+                    'relation' => 'p_grandfather',
+                    'name' => $pGrandfather['name'] ?: $pGrandfather['relationLabel'],
+                    'status' => $pGrandfather['status'],
+                    'living' => $pGrandfather['living'],
+                    'condition' => $pGrandfather['condition'] ?? ''
+                ];
+            }
+            if ($pGrandmother) {
+                $nodes['p_grandmother'] = [
+                    'id' => 'p_grandmother',
+                    'x' => $gmX,
+                    'y' => $gmY,
+                    'gender' => $pGrandmother['gender'],
+                    'relation' => 'p_grandmother',
+                    'name' => $pGrandmother['name'] ?: $pGrandmother['relationLabel'],
+                    'status' => $pGrandmother['status'],
+                    'living' => $pGrandmother['living'],
+                    'condition' => $pGrandmother['condition'] ?? ''
+                ];
+            }
+
+            if ($pGrandfather && $pGrandmother) {
+                $mx = ($gfX + $gmX) / 2 + 20;
+                $my = ($gfY + $gmY) / 2 + 20;
+                $nodes['m_p_grandparents'] = [
+                    'id' => 'm_p_grandparents',
+                    'type' => 'marriage',
+                    'x' => $mx,
+                    'y' => $my
+                ];
+                $edges[] = ['source' => 'p_grandfather', 'sh' => 'right', 'target' => 'm_p_grandparents', 'th' => 'left', 'type' => 'straight'];
+                $edges[] = ['source' => 'p_grandmother', 'sh' => 'left', 'target' => 'm_p_grandparents', 'th' => 'right', 'type' => 'straight'];
+                if ($father) {
+                    $edges[] = ['source' => 'm_p_grandparents', 'sh' => 'bottom', 'target' => 'father', 'th' => 'top', 'type' => 'step'];
+                }
+                foreach ($pUnclesAunts as $ua) {
+                    $edges[] = ['source' => 'm_p_grandparents', 'sh' => 'bottom', 'target' => $ua['id'], 'th' => 'top', 'type' => 'step'];
+                }
+            } else {
+                $activeGFId = $pGrandfather ? 'p_grandfather' : 'p_grandmother';
+                if ($father) {
+                    $edges[] = ['source' => $activeGFId, 'sh' => 'bottom', 'target' => 'father', 'th' => 'top', 'type' => 'step'];
+                }
+                foreach ($pUnclesAunts as $ua) {
+                    $edges[] = ['source' => $activeGFId, 'sh' => 'bottom', 'target' => $ua['id'], 'th' => 'top', 'type' => 'step'];
+                }
+            }
+        }
+
+        // 6. Maternal Grandparents (Generation 1)
+        if ($mGrandfather || $mGrandmother) {
+            $gfX = $mGrandfather && isset($mGrandfather['x']) ? $mGrandfather['x'] : ($motherX - 20);
+            $gfY = $mGrandfather && isset($mGrandfather['y']) ? $mGrandfather['y'] : $Y_G1;
+            $gmX = $mGrandmother && isset($mGrandmother['x']) ? $mGrandmother['x'] : ($motherX + 80);
+            $gmY = $mGrandmother && isset($mGrandmother['y']) ? $mGrandmother['y'] : $Y_G1;
+
+            if ($mGrandfather) {
+                $nodes['m_grandfather'] = [
+                    'id' => 'm_grandfather',
+                    'x' => $gfX,
+                    'y' => $gfY,
+                    'gender' => $mGrandfather['gender'],
+                    'relation' => 'm_grandfather',
+                    'name' => $mGrandfather['name'] ?: $mGrandfather['relationLabel'],
+                    'status' => $mGrandfather['status'],
+                    'living' => $mGrandfather['living'],
+                    'condition' => $mGrandfather['condition'] ?? ''
+                ];
+            }
+            if ($mGrandmother) {
+                $nodes['m_grandmother'] = [
+                    'id' => 'm_grandmother',
+                    'x' => $gmX,
+                    'y' => $gmY,
+                    'gender' => $mGrandmother['gender'],
+                    'relation' => 'm_grandmother',
+                    'name' => $mGrandmother['name'] ?: $mGrandmother['relationLabel'],
+                    'status' => $mGrandmother['status'],
+                    'living' => $mGrandmother['living'],
+                    'condition' => $mGrandmother['condition'] ?? ''
+                ];
+            }
+
+            if ($mGrandfather && $mGrandmother) {
+                $mx = ($gfX + $gmX) / 2 + 20;
+                $my = ($gfY + $gmY) / 2 + 20;
+                $nodes['m_m_grandparents'] = [
+                    'id' => 'm_m_grandparents',
+                    'type' => 'marriage',
+                    'x' => $mx,
+                    'y' => $my
+                ];
+                $edges[] = ['source' => 'm_grandfather', 'sh' => 'right', 'target' => 'm_m_grandparents', 'th' => 'left', 'type' => 'straight'];
+                $edges[] = ['source' => 'm_grandmother', 'sh' => 'left', 'target' => 'm_m_grandparents', 'th' => 'right', 'type' => 'straight'];
+                if ($mother) {
+                    $edges[] = ['source' => 'm_m_grandparents', 'sh' => 'bottom', 'target' => 'mother', 'th' => 'top', 'type' => 'step'];
+                }
+                foreach ($mUnclesAunts as $ua) {
+                    $edges[] = ['source' => 'm_m_grandparents', 'sh' => 'bottom', 'target' => $ua['id'], 'th' => 'top', 'type' => 'step'];
+                }
+            } else {
+                $activeGFId = $mGrandfather ? 'm_grandfather' : 'm_grandmother';
+                if ($mother) {
+                    $edges[] = ['source' => $activeGFId, 'sh' => 'bottom', 'target' => 'mother', 'th' => 'top', 'type' => 'step'];
+                }
+                foreach ($mUnclesAunts as $ua) {
+                    $edges[] = ['source' => $activeGFId, 'sh' => 'bottom', 'target' => $ua['id'], 'th' => 'top', 'type' => 'step'];
+                }
+            }
+        }
+
+        // 7. Children (Generation 4)
+        if (count($children) > 0) {
+            $spouseNode = $spouse ?: [
+                'id' => 'spouse',
+                'relation' => 'spouse',
+                'name' => 'Spouse',
+                'gender' => $patient['gender'] === 'male' ? 'female' : 'male',
+                'age' => '',
+                'living' => true,
+                'status' => 'Normal',
+                'condition' => ''
+            ];
+
+            $spouseX = isset($spouseNode['x']) ? $spouseNode['x'] : ($patientX + 80);
+            $spouseY = isset($spouseNode['y']) ? $spouseNode['y'] : $Y_G3;
+
+            $nodes['spouse'] = [
+                'id' => 'spouse',
+                'x' => $spouseX,
+                'y' => $spouseY,
+                'gender' => $spouseNode['gender'],
+                'relation' => 'spouse',
+                'name' => $spouseNode['name'],
+                'status' => $spouseNode['status'],
+                'living' => $spouseNode['living'],
+                'condition' => $spouseNode['condition'] ?? ''
+            ];
+
+            $nodes['m_patient'] = [
+                'id' => 'm_patient',
+                'type' => 'marriage',
+                'x' => ($patientX + $spouseX) / 2 + 20,
+                'y' => ($patientY + $spouseY) / 2 + 20
+            ];
+
+            $edges[] = ['source' => 'patient', 'sh' => 'right', 'target' => 'm_patient', 'th' => 'left', 'type' => 'straight'];
+            $edges[] = ['source' => 'spouse', 'sh' => 'left', 'target' => 'm_patient', 'th' => 'right', 'type' => 'straight'];
+
+            foreach ($children as $index => $child) {
+                $defaultX = ($patientX + 40) + ($index - (count($children) - 1) / 2) * 120;
+                $nodes[$child['id']] = [
+                    'id' => $child['id'],
+                    'x' => isset($child['x']) ? $child['x'] : $defaultX,
+                    'y' => isset($child['y']) ? $child['y'] : $Y_G4,
+                    'gender' => $child['gender'],
+                    'relation' => $child['relation'],
+                    'name' => $child['name'] ?: $child['relationLabel'],
+                    'status' => $child['status'],
+                    'living' => $child['living'],
+                    'condition' => $child['condition'] ?? ''
+                ];
+                $edges[] = ['source' => 'm_patient', 'sh' => 'bottom', 'target' => $child['id'], 'th' => 'top', 'type' => 'step'];
+            }
+        }
+
+        // Calculate bounding box bounds
+        $minX = 99999;
+        $maxX = -99999;
+        $minY = 99999;
+        $maxY = -99999;
+
+        foreach ($nodes as $n) {
+            $minX = min($minX, $n['x']);
+            $maxX = max($maxX, $n['x']);
+            $minY = min($minY, $n['y']);
+            $maxY = max($maxY, $n['y']);
+        }
+
+        if ($minX == 99999) { $minX = -100; $maxX = 100; $minY = 0; $maxY = 400; }
+        
+        // Dynamic mathematical coordinate scaling to fit within 520x280 canvas
+        // This bypasses any Dompdf SVG viewBox scaling bugs!
+        $treeW = ($maxX - $minX) + 40; // width of nodes is 40
+        $treeH = ($maxY - $minY) + 40; // height of nodes is 40
+        
+        $canvasW = 500;
+        $canvasH = 240;
+        
+        $scaleX = $canvasW / $treeW;
+        $scaleY = $canvasH / $treeH;
+        $scale = min($scaleX, $scaleY);
+        
+        // Don't upscale small trees too much
+        if ($scale > 1.1) {
+            $scale = 1.1;
+        }
+
+        // Shift offsets to center the scaled tree inside the 520x280 canvas
+        $offsetX = ($canvasW - $treeW * $scale) / 2 + 10;
+        $offsetY = ($canvasH - $treeH * $scale) / 2 + 10;
+
+        // Function helper to convert original coordinate to scaled coordinate
+        $scaleXCoord = function($x) use ($minX, $scale, $offsetX) {
+            return ($x - $minX) * $scale + $offsetX;
+        };
+        $scaleYCoord = function($y) use ($minY, $scale, $offsetY) {
+            return ($y - $minY) * $scale + $offsetY;
+        };
+
+        // Render Connections with scaled coordinates
+        $linesSvg = '';
+        foreach ($edges as $e) {
+            $sNode = $nodes[$e['source']] ?? null;
+            $tNode = $nodes[$e['target']] ?? null;
+            if (!$sNode || !$tNode) continue;
+
+            $sX = $sNode['x'];
+            $sY = $sNode['y'];
+            $tX = $tNode['x'];
+            $tY = $tNode['y'];
+
+            // Adjust relative connection points
+            if (isset($sNode['type']) && $sNode['type'] === 'marriage') {
+                $sX += 0.75; $sY += 0.75;
+            } else {
+                if ($e['sh'] === 'right') { $sX += 40; $sY += 20; }
+                elseif ($e['sh'] === 'left') { $sY += 20; }
+                elseif ($e['sh'] === 'bottom') { $sX += 20; $sY += 40; }
+            }
+
+            if (isset($tNode['type']) && $tNode['type'] === 'marriage') {
+                $tX += 0.75; $tY += 0.75;
+            } else {
+                if ($e['th'] === 'right') { $tX += 40; $tY += 20; }
+                elseif ($e['th'] === 'left') { $tY += 20; }
+                elseif ($e['th'] === 'top') { $tX += 20; }
+            }
+
+            // Scale to canvas
+            $sX_s = $scaleXCoord($sX);
+            $sY_s = $scaleYCoord($sY);
+            $tX_s = $scaleXCoord($tX);
+            $tY_s = $scaleYCoord($tY);
+
+            if ($e['type'] === 'straight') {
+                $linesSvg .= '<line x1="' . $sX_s . '" y1="' . $sY_s . '" x2="' . $tX_s . '" y2="' . $tY_s . '" />';
+            } else {
+                $midY = ($sY + $tY) / 2;
+                $midY_s = $scaleYCoord($midY);
+                $linesSvg .= '<path d="M ' . $sX_s . ' ' . $sY_s . ' V ' . $midY_s . ' H ' . $tX_s . ' V ' . $tY_s . '" />';
+            }
+        }
+
+        // Render Nodes with scaled coordinates
+        $shapesSvg = '';
+        foreach ($nodes as $n) {
+            $nX_s = $scaleXCoord($n['x']);
+            $nY_s = $scaleYCoord($n['y']);
+            
+            // Scaled node dimensions
+            $dim = 40 * $scale;
+            $halfDim = 20 * $scale;
+            $cx = $nX_s + $halfDim;
+            $cy = $nY_s + $halfDim;
+
+            if (isset($n['type']) && $n['type'] === 'marriage') {
+                $shapesSvg .= '<circle cx="' . $scaleXCoord($n['x'] + 0.75) . '" cy="' . $scaleYCoord($n['y'] + 0.75) . '" r="' . (3 * $scale) . '" fill="#000000" />';
+                continue;
+            }
+
+            $isMale = $n['gender'] === 'male';
+            $isFemale = $n['gender'] === 'female';
+            $isAffected = $n['status'] === 'Affected';
+            $isCarrier = $n['status'] === 'Carrier';
+            $isPatient = $n['id'] === 'patient';
+            $isDeceased = !$n['living'];
+
+            $strokeColor = $isPatient ? '#7c3aed' : '#1e293b';
+            $strokeWidth = $isPatient ? (2.5 * $scale) : (1.5 * $scale);
+            $fillColor = $isAffected ? ($isPatient ? '#7c3aed' : '#000000') : '#ffffff';
+
+            if ($isMale) {
+                $shapesSvg .= '<rect x="' . $nX_s . '" y="' . $nY_s . '" width="' . $dim . '" height="' . $dim . '" stroke="' . $strokeColor . '" stroke-width="' . $strokeWidth . '" fill="' . $fillColor . '" />';
+            } elseif ($isFemale) {
+                $shapesSvg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . $halfDim . '" stroke="' . $strokeColor . '" stroke-width="' . $strokeWidth . '" fill="' . $fillColor . '" />';
+            } else {
+                $shapesSvg .= '<polygon points="' . $cx . ',' . $nY_s . ' ' . ($nX_s + $dim) . ',' . $cy . ' ' . $cx . ',' . ($nY_s + $dim) . ' ' . $nX_s . ',' . $cy . '" stroke="' . $strokeColor . '" stroke-width="' . $strokeWidth . '" fill="' . $fillColor . '" />';
+            }
+
+            if ($isCarrier) {
+                $shapesSvg .= '<circle cx="' . $cx . '" cy="' . $cy . '" r="' . (4 * $scale) . '" fill="' . ($isPatient ? '#7c3aed' : '#000000') . '" />';
+            }
+            if ($isDeceased) {
+                $shapesSvg .= '<line x1="' . $nX_s . '" y1="' . ($nY_s + $dim) . '" x2="' . ($nX_s + $dim) . '" y2="' . $nY_s . '" stroke="#ef4444" stroke-width="' . (2 * $scale) . '" />';
+            }
+
+            // Labels with scaled positioning and font size
+            $fontSizeName = max(6, round(9.5 * $scale));
+            $fontSizeCond = max(5, round(7.5 * $scale));
+            
+            $shapesSvg .= '<text x="' . $cx . '" y="' . ($nY_s + $dim + 10) . '" text-anchor="middle" font-size="' . $fontSizeName . '" font-weight="bold" fill="#334155">' . htmlspecialchars($n['name'], ENT_QUOTES, 'UTF-8') . '</text>';
+            if (!empty($n['condition'])) {
+                $shapesSvg .= '<text x="' . $cx . '" y="' . ($nY_s + $dim + 20) . '" text-anchor="middle" font-size="' . $fontSizeCond . '" font-weight="bold" fill="#ef4444">' . htmlspecialchars($n['condition'], ENT_QUOTES, 'UTF-8') . '</text>';
+            }
+        }
+
+        // The canvas dimensions are always a fixed 520x280.
+        // Dompdf will render this viewport cleanly at exactly 520x280px without any clipping.
+        $svgStr = '<svg width="520" height="280" viewBox="0 0 520 280" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto;">
             <!-- Background -->
-            <rect x="0" y="0" width="720" height="420" fill="#f8faff" rx="6"/>
-            <!-- Gen Labels -->
-            <text x="28" y="55"  text-anchor="middle" font-weight="bold" font-size="13" fill="' . self::PRIMARY . '">I</text>
-            <text x="28" y="145" text-anchor="middle" font-weight="bold" font-size="13" fill="' . self::PRIMARY . '">II</text>
-            <text x="28" y="245" text-anchor="middle" font-weight="bold" font-size="13" fill="' . self::PRIMARY . '">III</text>
-            <text x="28" y="345" text-anchor="middle" font-weight="bold" font-size="13" fill="' . self::PRIMARY . '">IV</text>
-            <!-- Gen separator lines -->
-            <line x1="48" y1="80"  x2="700" y2="80"  stroke="#dbeafe" stroke-width="1" stroke-dasharray="4,4"/>
-            <line x1="48" y1="175" x2="700" y2="175" stroke="#dbeafe" stroke-width="1" stroke-dasharray="4,4"/>
-            <line x1="48" y1="275" x2="700" y2="275" stroke="#dbeafe" stroke-width="1" stroke-dasharray="4,4"/>
+            <rect x="0" y="0" width="520" height="280" fill="#f8fafc" rx="8" stroke="#e2e8f0" stroke-width="1"/>
+            
             <!-- Connectors -->
-            <g stroke="' . self::PRIMARY_LIGHT . '" stroke-width="1.8" fill="none">
-                <line x1="160" y1="50"  x2="240" y2="50"/>
-                <line x1="200" y1="50"  x2="200" y2="95"/>
-                <line x1="70"  y1="95"  x2="280" y2="95"/>
-                <line x1="70"  y1="95"  x2="70"  y2="122"/>
-                <line x1="140" y1="95"  x2="140" y2="122"/>
-                <line x1="210" y1="95"  x2="210" y2="122"/>
-                <line x1="280" y1="95"  x2="280" y2="122"/>
-                <line x1="480" y1="50"  x2="560" y2="50"/>
-                <line x1="520" y1="50"  x2="520" y2="95"/>
-                <line x1="440" y1="95"  x2="580" y2="95"/>
-                <line x1="440" y1="95"  x2="440" y2="122"/>
-                <line x1="510" y1="95"  x2="510" y2="122"/>
-                <line x1="580" y1="95"  x2="580" y2="122"/>
-                <line x1="280" y1="140" x2="440" y2="140"/>
-                <line x1="360" y1="140" x2="360" y2="195"/>
-                <line x1="75"  y1="195" x2="635" y2="195"/>
-                <line x1="75"  y1="195" x2="75"  y2="222"/>
-                <line x1="155" y1="195" x2="155" y2="222"/>
-                <line x1="235" y1="195" x2="235" y2="222"/>
-                <line x1="315" y1="195" x2="315" y2="222"/>
-                <line x1="395" y1="195" x2="395" y2="222"/>
-                <line x1="475" y1="195" x2="475" y2="222"/>
-                <line x1="555" y1="195" x2="555" y2="222"/>
-                <line x1="635" y1="195" x2="635" y2="222"/>
-                <line x1="315" y1="240" x2="315" y2="295"/>
-                <line x1="235" y1="295" x2="395" y2="295"/>
-                <line x1="235" y1="295" x2="235" y2="322"/>
-                <line x1="315" y1="295" x2="315" y2="322"/>
-                <line x1="395" y1="295" x2="395" y2="322"/>
+            <g stroke="#64748b" stroke-width="1.8" fill="none">
+                ' . $linesSvg . '
             </g>
-            ' . $shapes . '
-            <!-- Legend -->
-            <rect x="50" y="380" width="12" height="12" fill="' . self::PRIMARY . '" stroke="' . self::PRIMARY_LIGHT . '" stroke-width="1.5"/>
-            <text x="66" y="391" font-size="8" fill="' . self::TEXT_MID . '">Affected</text>
-            <circle cx="130" cy="386" r="6" fill="#fff" stroke="' . self::PRIMARY_LIGHT . '" stroke-width="1.5"/>
-            <text x="140" y="391" font-size="8" fill="' . self::TEXT_MID . '">Unaffected</text>
-            <rect x="210" y="380" width="12" height="12" fill="#fff" stroke="' . self::PRIMARY_LIGHT . '" stroke-width="1.5" rx="1"/>
-            <text x="226" y="391" font-size="8" fill="' . self::TEXT_MID . '">Male</text>
-            <circle cx="270" cy="386" r="6" fill="#fff" stroke="' . self::PRIMARY_LIGHT . '" stroke-width="1.5"/>
-            <text x="280" y="391" font-size="8" fill="' . self::TEXT_MID . '">Female</text>
+            
+            <!-- Shapes -->
+            ' . $shapesSvg . '
         </svg>';
+
+        return [
+            'svg' => $svgStr,
+            'width' => 520,
+            'height' => 280
+        ];
     }
 
     /* ── Section 7 ─────────────────────────────────────────── */
