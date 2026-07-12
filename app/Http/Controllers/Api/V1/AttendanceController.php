@@ -10,7 +10,7 @@ use App\Models\Therapist;
 use App\Models\TherapistAttendance;
 use App\Models\TherapistLeave;
 use Illuminate\Http\Request;
-use Illuminate\Support\CarbonPeriod;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
