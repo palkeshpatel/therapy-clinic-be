@@ -250,26 +250,36 @@ class SchedulingController extends Controller
             [$year, $mon] = explode('-', $month);
             $daysInMonth = cal_days_in_month(CAL_GREGORIAN, (int)$mon, (int)$year);
 
-            // Load all blocked/booked slot_ids for this therapist in this entire month at once
-            $blockedByDate = TherapistSchedule::query()
-                ->where('therapist_id', $therapistId)
-                ->whereYear('date', $year)
-                ->whereMonth('date', (int)$mon)
-                ->whereIn('status', ['busy', 'leave'])
-                ->get(['date', 'slot_id'])
-                ->groupBy(fn ($r) => substr($r->date, 0, 10));
 
-            $bookedByDate = DailySchedule::query()
+            $totalSlots = TimeSlot::where('is_active', true)->count();
+            $today      = Carbon::now()->toDateString();
+            $result     = [];
+
+            // If a specific slot is requested, load its time range for overlap detection
+            $requestedSlot = null;
+            if ($slotId) {
+                $requestedSlot = TimeSlot::find($slotId);
+            }
+
+            // Load all booked slot time ranges (join with time_slots) so we can check overlaps
+            // We load slot start_time/end_time via the TimeSlot model for all booked records in this month
+            $bookedWithTimes = DailySchedule::query()
                 ->where('therapist_id', $therapistId)
                 ->whereYear('date', $year)
                 ->whereMonth('date', (int)$mon)
                 ->whereIn('status', ['scheduled', 'in_progress', 'completed'])
-                ->get(['date', 'slot_id'])
+                ->join('time_slots', 'daily_schedule.slot_id', '=', 'time_slots.id')
+                ->get(['daily_schedule.date', 'time_slots.start_time', 'time_slots.end_time'])
                 ->groupBy(fn ($r) => substr($r->date, 0, 10));
 
-            $totalSlots = TimeSlot::where('is_active', true)->count();
-            $today      = now()->toDateString();
-            $result     = [];
+            $blockedWithTimes = TherapistSchedule::query()
+                ->where('therapist_id', $therapistId)
+                ->whereYear('date', $year)
+                ->whereMonth('date', (int)$mon)
+                ->whereIn('status', ['busy', 'leave'])
+                ->join('time_slots', 'therapist_schedule.slot_id', '=', 'time_slots.id')
+                ->get(['therapist_schedule.date', 'time_slots.start_time', 'time_slots.end_time'])
+                ->groupBy(fn ($r) => substr($r->date, 0, 10));
 
             for ($day = 1; $day <= $daysInMonth; $day++) {
                 $dateStr = $year . '-' . str_pad($mon, 2, '0', STR_PAD_LEFT) . '-' . str_pad($day, 2, '0', STR_PAD_LEFT);
@@ -279,14 +289,24 @@ class SchedulingController extends Controller
                     continue;
                 }
 
-                $blockedSlots = collect($blockedByDate->get($dateStr, collect()))->pluck('slot_id')->toArray();
-                $bookedSlots  = collect($bookedByDate->get($dateStr, collect()))->pluck('slot_id')->toArray();
-                $unavailable  = array_unique(array_merge($blockedSlots, $bookedSlots));
+                // Merge all occupied time ranges for this date
+                $occupiedRanges = collect($bookedWithTimes->get($dateStr, collect()))
+                    ->merge(collect($blockedWithTimes->get($dateStr, collect())));
 
-                if ($slotId) {
-                    $result[$dateStr] = in_array($slotId, $unavailable, true) ? 'unavailable' : 'available';
+                if ($requestedSlot) {
+                    // Check if any booked/blocked slot overlaps with the requested time slot
+                    $reqStart = $requestedSlot->start_time; // e.g. "08:00:00"
+                    $reqEnd   = $requestedSlot->end_time;   // e.g. "08:45:00"
+
+                    $hasOverlap = $occupiedRanges->contains(function ($r) use ($reqStart, $reqEnd) {
+                        // Overlap: existing.start < req.end  AND  existing.end > req.start
+                        return $r->start_time < $reqEnd && $r->end_time > $reqStart;
+                    });
+
+                    $result[$dateStr] = $hasOverlap ? 'unavailable' : 'available';
                 } else {
-                    $result[$dateStr] = (count($unavailable) < $totalSlots) ? 'available' : 'unavailable';
+                    // No specific slot: unavailable if ALL slots are occupied
+                    $result[$dateStr] = ($occupiedRanges->count() >= $totalSlots) ? 'unavailable' : 'available';
                 }
             }
 
