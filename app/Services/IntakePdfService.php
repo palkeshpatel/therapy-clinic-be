@@ -530,7 +530,7 @@ class IntakePdfService
                 <td class="value">' . $this->badge($i->child_nicu_admission, 'No') . '</td>
             </tr>
             <tr>
-                <td class="label">Immediate Birth Cry</td>
+                <td class="label">Delay Cry</td>
                 <td class="value">' . $this->badge($i->child_birth_cry, 'Present') . '</td>
                 <td class="label">Neonatal Jaundice</td>
                 <td class="value">' . $this->badge($i->child_jaundice, 'Absent') . '</td>
