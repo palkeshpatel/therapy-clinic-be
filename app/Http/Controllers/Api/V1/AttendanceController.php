@@ -78,7 +78,7 @@ class AttendanceController extends Controller
 
         $holidayDates = $holidays->pluck('holiday_date')->map(fn ($date) => Carbon::parse($date)->toDateString())->all();
         $businessDays = collect(CarbonPeriod::create($start, $end))
-            ->filter(fn ($date) => $date->isWeekday())
+            ->filter(fn ($date) => $date->dayOfWeek !== Carbon::SUNDAY)
             ->count();
 
         $therapists = Therapist::query()
@@ -106,6 +106,12 @@ class AttendanceController extends Controller
                     'holiday_days' => $holidayDays,
                     'absent_days' => $absentDays,
                     'working_days' => $availableDays,
+                    'leaves' => $therapist->leaves->map(function ($l) {
+                        return [
+                            'date' => Carbon::parse($l->leave_date)->toDateString(),
+                            'type' => $l->leave_type,
+                        ];
+                    })->values(),
                     'attendance' => $therapist->attendance->map(function ($row) {
                         return [
                             'id' => $row->id,
