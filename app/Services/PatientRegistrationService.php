@@ -82,15 +82,19 @@ class PatientRegistrationService
                         }
 
 
-                        DailySchedule::create([
-                            'date'         => $scheduleDate,
-                            'slot_id'      => $slotId,
-                            'patient_id'   => $patient->id,
-                            'therapist_id' => $therapistId,
-                            'therapy_id'   => $therapyId,
-                            'status'       => 'scheduled',
-                            'created_by'   => Auth::id(),
-                        ]);
+                        DailySchedule::updateOrCreate(
+                            [
+                                'date'         => $scheduleDate,
+                                'slot_id'      => $slotId,
+                                'patient_id'   => $patient->id,
+                                'therapist_id' => $therapistId,
+                            ],
+                            [
+                                'therapy_id'   => $therapyId,
+                                'status'       => 'scheduled',
+                                'created_by'   => Auth::id(),
+                            ]
+                        );
                     }
                 }
 

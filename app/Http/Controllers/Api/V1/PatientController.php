@@ -291,15 +291,19 @@ class PatientController extends Controller
                                 }
 
 
-                                \App\Models\DailySchedule::create([
-                                    'date'         => $scheduleDate,
-                                    'slot_id'      => $slotId,
-                                    'patient_id'   => $patient->id,
-                                    'therapist_id' => $therapistId,
-                                    'therapy_id'   => $therapyId,
-                                    'status'       => 'scheduled',
-                                    'created_by'   => \Illuminate\Support\Facades\Auth::id(),
-                                ]);
+                                \App\Models\DailySchedule::updateOrCreate(
+                                    [
+                                        'date'         => $scheduleDate,
+                                        'slot_id'      => $slotId,
+                                        'patient_id'   => $patient->id,
+                                        'therapist_id' => $therapistId,
+                                    ],
+                                    [
+                                        'therapy_id'   => $therapyId,
+                                        'status'       => 'scheduled',
+                                        'created_by'   => \Illuminate\Support\Facades\Auth::id(),
+                                    ]
+                                );
                             }
                         }
                     }
