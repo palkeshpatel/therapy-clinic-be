@@ -53,10 +53,12 @@ class UserController extends Controller
                 'role_id' => ['required', 'integer', 'exists:roles,id'],
                 'status' => ['nullable', Rule::in(['active', 'inactive'])],
                 'specialization' => ['nullable', 'string', 'max:150'],
+                'salary' => ['nullable', 'string', 'max:255'],
+                'birth_date' => ['nullable', 'date'],
             ]);
 
             $user = new User();
-            $user->fill($request->only(['name', 'email', 'phone', 'role_id', 'status']));
+            $user->fill($request->only(['name', 'email', 'phone', 'role_id', 'status', 'salary', 'birth_date']));
             $user->password = Hash::make((string) $request->input('password'));
             if (! $user->status) {
                 $user->status = 'active';
@@ -108,9 +110,11 @@ class UserController extends Controller
                 'role_id' => ['sometimes', 'required', 'integer', 'exists:roles,id'],
                 'status' => ['sometimes', 'required', Rule::in(['active', 'inactive'])],
                 'specialization' => ['sometimes', 'nullable', 'string', 'max:150'],
+                'salary' => ['sometimes', 'nullable', 'string', 'max:255'],
+                'birth_date' => ['sometimes', 'nullable', 'date'],
             ]);
 
-            $fields = $request->only(['name', 'email', 'phone', 'status']);
+            $fields = $request->only(['name', 'email', 'phone', 'status', 'salary', 'birth_date']);
             if (! $user->isAdministrator() && $request->has('role_id')) {
                 $fields['role_id'] = $request->input('role_id');
             } elseif ($user->isAdministrator() && $request->has('role_id')
