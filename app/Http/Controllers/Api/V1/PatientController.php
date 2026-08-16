@@ -59,7 +59,7 @@ class PatientController extends Controller
             }
         }
 
-        $sortBy = (string) $request->input('sort_by', 'created_at');
+        $sortBy = (string) $request->input('sort_by', 'id');
         $sortDir = strtolower((string) $request->input('sort_dir', 'asc')) === 'desc' ? 'desc' : 'asc';
         $allowedSort = ['id', 'patient_name', 'phone', 'status', 'created_at'];
         if (! in_array($sortBy, $allowedSort, true)) {
