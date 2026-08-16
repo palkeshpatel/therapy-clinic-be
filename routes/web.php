@@ -94,6 +94,7 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
     // Patients (Admin/Staff full access, Therapist view access)
     $router->group(['middleware' => ['auth', 'role:admin,therapist']], function () use ($router) {
         $router->get('patients', 'Api\\V1\\PatientController@index');
+        $router->get('patients/export', 'Api\\V1\\PatientController@export');
         $router->get('patients/{id}', 'Api\\V1\\PatientController@show');
         $router->get('patients/{id}/medical-record', 'Api\\V1\\PatientMedicalRecordController@show');
         $router->get('patients/{id}/documents', 'Api\\V1\\PatientDocumentController@index');

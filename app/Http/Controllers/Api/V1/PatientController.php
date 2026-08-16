@@ -375,4 +375,81 @@ class PatientController extends Controller
             ->paginate(15);
         return ApiResponse::paginate($invoices, 'OK');
     }
+
+    public function export(Request $request)
+    {
+        $query = Patient::query()->with(['therapies.therapy']);
+
+        if ($search = trim((string) $request->input('search', ''))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('patient_name', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $allowedStatuses = ['active', 'inactive', 'discharged'];
+        if ($request->filled('status')) {
+            $raw = $request->input('status');
+            $statuses = is_array($raw)
+                ? $raw
+                : array_filter(array_map('trim', explode(',', (string) $raw)));
+            $statuses = array_values(array_intersect($statuses, $allowedStatuses));
+            if (count($statuses) > 0) {
+                $query->whereIn('status', $statuses);
+            }
+        }
+
+        $query->orderBy('created_at', 'desc');
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="patients_export_' . date('Y-m-d_H-i') . '.csv"',
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($query) {
+            $file = fopen('php://output', 'w');
+            
+            // CSV Headers
+            fputcsv($file, [
+                'ID',
+                'Patient Name',
+                'Guardian Name',
+                'Phone',
+                'Email',
+                'Gender',
+                'Status',
+                'Joining Date',
+                'Assigned Therapies'
+            ]);
+
+            // Chunk to avoid memory limits on large datasets
+            $query->chunk(200, function ($patients) use ($file) {
+                foreach ($patients as $patient) {
+                    $therapiesList = $patient->therapies->map(function ($pt) {
+                        return $pt->therapy ? $pt->therapy->therapy_name : '';
+                    })->filter()->implode(', ');
+
+                    fputcsv($file, [
+                        $patient->id,
+                        $patient->patient_name,
+                        $patient->guardian_name,
+                        $patient->phone,
+                        $patient->email,
+                        ucfirst($patient->gender ?? ''),
+                        ucfirst($patient->status),
+                        $patient->joining_date,
+                        $therapiesList
+                    ]);
+                }
+            });
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }
