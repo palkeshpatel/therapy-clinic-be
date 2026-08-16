@@ -8,6 +8,7 @@ class Therapy extends Model
 {
     protected $fillable = [
         'therapy_name',
+        'short_name',
         'description',
         'session_price',
         'fixed_price',

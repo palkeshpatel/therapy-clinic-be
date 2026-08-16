@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             HolidaySeeder::class,
             TherapySeeder::class,
             DemoDataSeeder::class,
+            PatientSeeder::class,
         ]);
     }
 }

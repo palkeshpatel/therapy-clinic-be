@@ -1,4 +1,7 @@
 <?php
+$router->get('/test-error-2', function () {
+    throw new \Exception("Normal exception");
+});
 
 /** @var \Laravel\Lumen\Routing\Router $router */
 

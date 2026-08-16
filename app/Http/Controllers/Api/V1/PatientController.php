@@ -173,8 +173,35 @@ class PatientController extends Controller
         
         $patientArray = $patient->toArray();
         if (isset($patientArray['therapies'])) {
+            // Keep track of which schedules have been assigned to avoid duplicates
+            // if the user has the exact same therapy and therapist in multiple cards
+            $assignedScheduleIds = [];
+            
             foreach ($patientArray['therapies'] as &$therapy) {
-                $therapy['schedules'] = $schedules->where('therapy_id', $therapy['therapy_id'])->values()->toArray();
+                $matchedSchedules = $schedules->filter(function ($schedule) use ($therapy, &$assignedScheduleIds) {
+                    if (in_array($schedule->id, $assignedScheduleIds)) {
+                        return false;
+                    }
+                    return $schedule->therapy_id == $therapy['therapy_id'] && 
+                           $schedule->therapist_id == $therapy['therapist_id'];
+                });
+                
+                // Group the matched schedules by slot_id.
+                // Since a TherapyAssignmentCard in the frontend only supports ONE time slot,
+                // we should only assign schedules that share the SAME slot_id to this card.
+                // The remaining schedules for this therapy/therapist will be picked up by the next card.
+                if ($matchedSchedules->isNotEmpty()) {
+                    $firstSlotId = $matchedSchedules->first()->slot_id;
+                    $schedulesForThisCard = $matchedSchedules->where('slot_id', $firstSlotId);
+                    
+                    foreach ($schedulesForThisCard as $s) {
+                        $assignedScheduleIds[] = $s->id;
+                    }
+                    
+                    $therapy['schedules'] = $schedulesForThisCard->values()->toArray();
+                } else {
+                    $therapy['schedules'] = [];
+                }
             }
         }
 
@@ -187,6 +214,7 @@ class PatientController extends Controller
         if (! $patient) {
             return ApiResponse::error('Patient not found', 404);
         }
+        
 
         try {
             $hasTherapies = $request->has('therapies');
@@ -246,13 +274,6 @@ class PatientController extends Controller
 
                     foreach ($therapyRows as $index => $row) {
                         $therapyId = (int) $row['therapy_id'];
-
-                        if (in_array($therapyId, $therapyIds, true)) {
-                            throw ValidationException::withMessages([
-                                "therapies.{$index}.therapy_id" => ['Each therapy can only be added once.'],
-                            ]);
-                        }
-                        $therapyIds[] = $therapyId;
 
                         $therapy = \App\Models\Therapy::query()->find($therapyId);
                         if (! $therapy || $therapy->status !== 'active') {

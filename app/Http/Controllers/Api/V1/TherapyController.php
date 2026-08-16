@@ -14,7 +14,7 @@ class TherapyController extends Controller
     public function index(Request $request)
     {
         $perPage = (int) ($request->input('per_page', 15));
-        $perPage = max(1, min(100, $perPage));
+        $perPage = max(1, min(1000, $perPage));
 
         $query = Therapy::query();
 
@@ -42,13 +42,14 @@ class TherapyController extends Controller
         try {
             $this->validate($request, [
                 'therapy_name' => ['required', 'string', 'max:150'],
+                'short_name' => ['nullable', 'string', 'max:50'],
                 'description' => ['nullable', 'string'],
                 'session_price' => ['required', 'numeric', 'min:0'],
                 'fixed_price' => ['required', 'numeric', 'min:0'],
                 'status' => ['nullable', Rule::in(['active', 'inactive'])],
             ]);
 
-            $therapy = Therapy::create($request->only(['therapy_name', 'description', 'session_price', 'fixed_price', 'status']));
+            $therapy = Therapy::create($request->only(['therapy_name', 'short_name', 'description', 'session_price', 'fixed_price', 'status']));
             return ApiResponse::success($therapy, 'Therapy created', 201);
         } catch (ValidationException $e) {
             return ApiResponse::error('Validation failed', 422, $e->errors());
@@ -74,13 +75,14 @@ class TherapyController extends Controller
         try {
             $this->validate($request, [
                 'therapy_name' => ['sometimes', 'required', 'string', 'max:150'],
+                'short_name' => ['sometimes', 'nullable', 'string', 'max:50'],
                 'description' => ['sometimes', 'nullable', 'string'],
                 'session_price' => ['sometimes', 'required', 'numeric', 'min:0'],
                 'fixed_price' => ['sometimes', 'required', 'numeric', 'min:0'],
                 'status' => ['sometimes', 'required', Rule::in(['active', 'inactive'])],
             ]);
 
-            $therapy->fill($request->only(['therapy_name', 'description', 'session_price', 'fixed_price', 'status']));
+            $therapy->fill($request->only(['therapy_name', 'short_name', 'description', 'session_price', 'fixed_price', 'status']));
             $therapy->save();
 
             return ApiResponse::success($therapy, 'Therapy updated');

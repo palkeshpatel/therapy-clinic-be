@@ -31,13 +31,6 @@ class PatientRegistrationService
             foreach ($therapyRows as $index => $row) {
                 $therapyId = (int) $row['therapy_id'];
 
-                if (in_array($therapyId, $therapyIds, true)) {
-                    throw ValidationException::withMessages([
-                        "therapies.{$index}.therapy_id" => ['Each therapy can only be added once.'],
-                    ]);
-                }
-                $therapyIds[] = $therapyId;
-
                 $therapy = Therapy::query()->find($therapyId);
                 if (! $therapy || $therapy->status !== 'active') {
                     throw ValidationException::withMessages([
