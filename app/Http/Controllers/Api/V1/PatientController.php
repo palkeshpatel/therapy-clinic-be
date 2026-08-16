@@ -63,7 +63,7 @@ class PatientController extends Controller
         $sortDir = strtolower((string) $request->input('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
         $allowedSort = ['id', 'patient_name', 'phone', 'status', 'created_at'];
         if (! in_array($sortBy, $allowedSort, true)) {
-            $sortBy = 'created_at';
+            $sortBy = 'id';
         }
         $query->orderBy($sortBy, $sortDir);
 
@@ -400,7 +400,7 @@ class PatientController extends Controller
             }
         }
 
-        $query->orderBy('created_at', 'desc');
+        $query->orderBy('id', 'desc');
 
         $headers = [
             'Content-Type' => 'text/csv',
@@ -431,7 +431,7 @@ class PatientController extends Controller
                 foreach ($patients as $patient) {
                     $therapiesList = $patient->therapies->map(function ($pt) {
                         return $pt->therapy ? $pt->therapy->therapy_name : '';
-                    })->filter()->implode(', ');
+                    })->filter()->implode("\n");
 
                     fputcsv($file, [
                         $patient->id,
