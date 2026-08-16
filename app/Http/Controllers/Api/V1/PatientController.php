@@ -429,21 +429,44 @@ class PatientController extends Controller
             // Chunk to avoid memory limits on large datasets
             $query->chunk(200, function ($patients) use ($file) {
                 foreach ($patients as $patient) {
-                    $therapiesList = $patient->therapies->map(function ($pt) {
+                    $therapies = $patient->therapies->map(function ($pt) {
                         return $pt->therapy ? $pt->therapy->therapy_name : '';
-                    })->filter()->implode("\n");
+                    })->filter()->values();
 
-                    fputcsv($file, [
-                        $patient->id,
-                        $patient->patient_name,
-                        $patient->guardian_name,
-                        $patient->phone,
-                        $patient->email,
-                        ucfirst($patient->gender ?? ''),
-                        ucfirst($patient->status),
-                        $patient->joining_date,
-                        $therapiesList
-                    ]);
+                    if ($therapies->isEmpty()) {
+                        fputcsv($file, [
+                            $patient->id,
+                            $patient->patient_name,
+                            $patient->guardian_name,
+                            $patient->phone,
+                            $patient->email,
+                            ucfirst($patient->gender ?? ''),
+                            ucfirst($patient->status),
+                            $patient->joining_date,
+                            ''
+                        ]);
+                    } else {
+                        foreach ($therapies as $index => $therapyName) {
+                            if ($index === 0) {
+                                fputcsv($file, [
+                                    $patient->id,
+                                    $patient->patient_name,
+                                    $patient->guardian_name,
+                                    $patient->phone,
+                                    $patient->email,
+                                    ucfirst($patient->gender ?? ''),
+                                    ucfirst($patient->status),
+                                    $patient->joining_date,
+                                    $therapyName
+                                ]);
+                            } else {
+                                fputcsv($file, [
+                                    '', '', '', '', '', '', '', '',
+                                    $therapyName
+                                ]);
+                            }
+                        }
+                    }
                 }
             });
 
