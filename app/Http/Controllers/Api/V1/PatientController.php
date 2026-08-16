@@ -378,7 +378,7 @@ class PatientController extends Controller
 
     public function export(Request $request)
     {
-        $query = Patient::query()->with(['therapies.therapy']);
+        $query = Patient::query()->with(['therapies.therapy', 'therapies.therapist', 'dailySchedules.slot']);
 
         if ($search = trim((string) $request->input('search', ''))) {
             $query->where(function ($q) use ($search) {
@@ -423,15 +423,18 @@ class PatientController extends Controller
                 'Gender',
                 'Status',
                 'Joining Date',
-                'Assigned Therapies'
+                'Assigned Therapy',
+                'Therapist',
+                'Billing Type',
+                'Fee',
+                'Time Slot',
+                'Scheduled Dates'
             ]);
 
             // Chunk to avoid memory limits on large datasets
             $query->chunk(200, function ($patients) use ($file) {
                 foreach ($patients as $patient) {
-                    $therapies = $patient->therapies->map(function ($pt) {
-                        return $pt->therapy ? $pt->therapy->therapy_name : '';
-                    })->filter()->values();
+                    $therapies = $patient->therapies->values();
 
                     if ($therapies->isEmpty()) {
                         fputcsv($file, [
@@ -443,10 +446,32 @@ class PatientController extends Controller
                             ucfirst($patient->gender ?? ''),
                             ucfirst($patient->status),
                             $patient->joining_date,
-                            ''
+                            '', '', '', '', '', ''
                         ]);
                     } else {
-                        foreach ($therapies as $index => $therapyName) {
+                        foreach ($therapies as $index => $pt) {
+                            $therapyName = $pt->therapy ? $pt->therapy->therapy_name : '';
+                            $therapistName = $pt->therapist ? $pt->therapist->name : '';
+                            $billingType = $pt->billing_type ? ucfirst($pt->billing_type) : '';
+                            $fee = $pt->fee ?? '';
+
+                            $schedules = $patient->dailySchedules->filter(function($s) use ($pt) {
+                                return $s->therapy_id == $pt->therapy_id && $s->therapist_id == $pt->therapist_id;
+                            });
+
+                            $timeSlot = '';
+                            $datesStr = '';
+                            if ($schedules->isNotEmpty()) {
+                                $firstSlot = $schedules->first()->slot;
+                                if ($firstSlot) {
+                                    $timeSlot = \Carbon\Carbon::parse($firstSlot->start_time)->format('g:i A') . ' - ' . \Carbon\Carbon::parse($firstSlot->end_time)->format('g:i A');
+                                }
+                                $dates = $schedules->pluck('date')->map(function($d) {
+                                    return \Carbon\Carbon::parse($d)->format('M d, Y');
+                                })->implode(', ');
+                                $datesStr = $schedules->count() . ' dates: ' . $dates;
+                            }
+
                             if ($index === 0) {
                                 fputcsv($file, [
                                     $patient->id,
@@ -457,12 +482,22 @@ class PatientController extends Controller
                                     ucfirst($patient->gender ?? ''),
                                     ucfirst($patient->status),
                                     $patient->joining_date,
-                                    $therapyName
+                                    $therapyName,
+                                    $therapistName,
+                                    $billingType,
+                                    $fee,
+                                    $timeSlot,
+                                    $datesStr
                                 ]);
                             } else {
                                 fputcsv($file, [
                                     '', '', '', '', '', '', '', '',
-                                    $therapyName
+                                    $therapyName,
+                                    $therapistName,
+                                    $billingType,
+                                    $fee,
+                                    $timeSlot,
+                                    $datesStr
                                 ]);
                             }
                         }
