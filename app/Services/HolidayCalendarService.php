@@ -10,43 +10,11 @@ class HolidayCalendarService
     {
         $rows = [];
 
-        foreach ($this->fixedRecurringTemplates() as $template) {
-            $date = Carbon::create($year, $template['month'], $template['day'])->toDateString();
-            $this->mergeRow($rows, $date, [
-                'holiday_date' => $date,
-                'holiday_name' => $template['holiday_name'],
-                'holiday_type' => $template['holiday_type'],
-                'applicable' => $template['applicable'],
-                'description' => $template['description'],
-                'rule_type' => 'fixed_yearly',
-                'is_recurring' => true,
-                'status' => 'active',
-            ]);
-        }
-
         foreach ($this->weeklyRules($year) as $row) {
             $this->mergeRow($rows, $row['holiday_date'], $row);
         }
 
-        if ($includeSpecialDates) {
-            foreach ($this->specialDates2026() as $template) {
-                if ((int) $template['year'] !== $year) {
-                    continue;
-                }
 
-                $date = Carbon::create($template['year'], $template['month'], $template['day'])->toDateString();
-                $this->mergeRow($rows, $date, [
-                    'holiday_date' => $date,
-                    'holiday_name' => $template['holiday_name'],
-                    'holiday_type' => $template['holiday_type'],
-                    'applicable' => $template['applicable'],
-                    'description' => $template['description'],
-                    'rule_type' => 'one_time',
-                    'is_recurring' => false,
-                    'status' => 'active',
-                ]);
-            }
-        }
 
         ksort($rows);
         return array_values($rows);
@@ -105,22 +73,6 @@ class HolidayCalendarService
                 continue;
             }
 
-            if ($date->isSaturday()) {
-                $weekOfMonth = (int) ceil($date->day / 7);
-                if (in_array($weekOfMonth, [2, 4], true)) {
-                    $label = $weekOfMonth === 2 ? '2nd Saturday Holiday' : '4th Saturday Holiday';
-                    $rows[$date->toDateString()] = [
-                        'holiday_date' => $date->toDateString(),
-                        'holiday_name' => $label,
-                        'holiday_type' => 'Weekly',
-                        'applicable' => 'All Staff',
-                        'description' => 'Weekly off on '.$label,
-                        'rule_type' => 'weekly_saturday',
-                        'is_recurring' => true,
-                        'status' => 'active',
-                    ];
-                }
-            }
         }
 
         return array_values($rows);

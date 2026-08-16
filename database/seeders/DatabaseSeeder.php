@@ -14,7 +14,6 @@ class DatabaseSeeder extends Seeder
             RolePermissionsSeeder::class,
             AdminUserSeeder::class,
             ClinicSeeder::class,
-            TimeSlotsSeeder::class,
             HolidaySeeder::class,
             TherapySeeder::class,
             DemoDataSeeder::class,
