@@ -42,17 +42,85 @@ class DemoDataSeeder extends Seeder
 
         $therapistUserData = [
             [
-                'user' => ['name' => 'Dr. Priya Sharma',   'email' => 'priya@clinic.com',   'phone' => '9001000001'],
-                'profile' => ['specialization' => 'Speech Therapy',       'joined_date' => '2022-01-15'],
+                'user' => ['name' => 'DR.MANSI GHANSHYAMBHAI PATEL', 'email' => 'Manshipatel2209@gmail.com', 'phone' => '9316510709', 'password_plain' => 'Mansi@3009', 'salary' => 21000, 'birth_date' => '2001-11-09'],
+                'profile' => ['specialization' => 'Therapist - Physiotherapist', 'joined_date' => $now->toDateString()],
             ],
             [
-                'user' => ['name' => 'Dr. Rahul Verma',    'email' => 'rahul@clinic.com',   'phone' => '9001000002'],
-                'profile' => ['specialization' => 'Occupational Therapy', 'joined_date' => '2021-06-01'],
+                'user' => ['name' => 'DR. JANVIBEN SHAILENDRAKUMAR THAKOR', 'email' => 'drjanvipt@gmail.com', 'phone' => '9574942433', 'password_plain' => 'Janvi@30032002', 'salary' => 15000, 'birth_date' => '2002-03-30'],
+                'profile' => ['specialization' => 'THERAPIST-PHYSIOTHERAPIST', 'joined_date' => $now->toDateString()],
             ],
             [
-                'user' => ['name' => 'Dr. Neha Patel',     'email' => 'neha@clinic.com',    'phone' => '9001000003'],
-                'profile' => ['specialization' => 'Behavioral Therapy',   'joined_date' => '2023-03-10'],
-            ]
+                'user' => ['name' => 'DR.CHANDNI SURESHBHAI KAMNANI', 'email' => 'Chandanikamnani@gmail.com', 'phone' => '9974256900', 'password_plain' => 'Chandani@12903', 'salary' => 6000, 'birth_date' => '2003-09-12'],
+                'profile' => ['specialization' => 'THERAPIST-physiotherapist', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'POOJA BEN ROMIK BRAHMBHATT', 'email' => 'Poojaromik29@gmail.com', 'phone' => '7096588335', 'password_plain' => 'pooja@290897', 'salary' => 16000, 'birth_date' => '1997-08-29'],
+                'profile' => ['specialization' => 'THERAPIST- ABA THERAPIST', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'DR.MANSI GHANSHYAMBHAI PATEL', 'email' => 'Gohilgauri2019@gmail.com', 'phone' => '7046488562', 'password_plain' => 'Gauri@30901', 'salary' => 16000, 'birth_date' => '2001-09-30'],
+                'profile' => ['specialization' => 'THERAPIST-PHYSIOTHERAPIST', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'kishorbhai viththalbhai Sarvaiya', 'email' => 'Sarvaiyakishorv6354@gamil.com', 'phone' => '6354145355', 'password_plain' => 'kishor@0023', 'salary' => 15000, 'birth_date' => '2002-10-23'],
+                'profile' => ['specialization' => 'THERAPIST- special educater,ABA therapist', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'PRIYAL ALPESHBHAI ZALA', 'email' => 'Pihu132202@gmail.com', 'phone' => '9512582655', 'password_plain' => 'Priyal@150101', 'salary' => 12000, 'birth_date' => '2001-01-15'],
+                'profile' => ['specialization' => 'THERAPIST- ABA THERAPIST', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'ASMITA SOMABHAI PARMAR', 'email' => 'Pasmita151296@gmail.com', 'phone' => '9265915659', 'password_plain' => 'Asmita@151296', 'salary' => 21000, 'birth_date' => '1996-12-15'],
+                'profile' => ['specialization' => 'THERAPIST- special-educate ,ABA therapist', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'ALKA PARMAR', 'email' => 'Parmar1991alka@gmail.com', 'phone' => '9691911827', 'password_plain' => 'Alka@090791', 'salary' => 18000, 'birth_date' => '1991-07-09'],
+                'profile' => ['specialization' => 'THERAPIST- ABA THERAPIST', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'REKHA SANJAY BIHARE', 'email' => 'biharerupali@gmail.com', 'phone' => '9405965579', 'password_plain' => 'Rekha@240982', 'salary' => 20000, 'birth_date' => '1982-09-24'],
+                'profile' => ['specialization' => 'THERAPIST-special edu,aba', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'DR.FALGUNI MAHAVAR', 'email' => 'mahavar.falguni@gmail.com', 'phone' => '7984954668', 'password_plain' => 'Falguni@090499', 'salary' => 20000, 'birth_date' => '1999-04-09'],
+                'profile' => ['specialization' => 'THERAPIST-Physiotherapist', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'DR.SHRUTI PRAJAPATI', 'email' => 'Shruti1262001@gmail.com', 'phone' => '6355967016', 'password_plain' => 'Shruti@120601', 'salary' => 23000, 'birth_date' => '2001-06-12'],
+                'profile' => ['specialization' => 'THERAPIST- Physiotherapist', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'MAHERUNNISHA AFTAB SAIYAD', 'email' => 'Saiyadnisha40@gmail.com', 'phone' => '9723231635', 'password_plain' => 'Nisha@020782', 'salary' => 16000, 'birth_date' => '1982-07-02'],
+                'profile' => ['specialization' => 'THERAPIST- occupational therapist', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'DR DARSHI SANTOSHKUMAR SHAH', 'email' => 'Darshishah1611@gmail.com', 'phone' => '9081562685', 'password_plain' => 'Darshi@161102', 'salary' => 16000, 'birth_date' => '2002-11-16'],
+                'profile' => ['specialization' => 'THERAPIST- PHYSIOTHERAPIST', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'DR DIPIKA MAKWAN', 'email' => 'Dipikamakwana3010@gmail.com', 'phone' => '8128969605', 'password_plain' => 'dipika@300601', 'salary' => 15000, 'birth_date' => '2001-06-30'],
+                'profile' => ['specialization' => 'THERAPIST- PHYSIOTHERAPIST', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'DR NEELIMA SINGH', 'email' => 'Snilu4346@gmail.com', 'phone' => '7567821993', 'password_plain' => 'neelu@240298', 'salary' => 30000, 'birth_date' => '1998-02-24'],
+                'profile' => ['specialization' => 'THERAPIST- PHYSIOTHERAPIST', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'Ankita kishorbhai parmar', 'email' => 'Ankip5943@gmail.com', 'phone' => '7863062640', 'password_plain' => 'Ankita@060394', 'salary' => 23000, 'birth_date' => '1994-03-16'],
+                'profile' => ['specialization' => 'THERAPIST-SPEECH THERAPIST,ABA THERAPIST', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'OMKAR PRAMOD SURATKAR', 'email' => 'Omisuratkar21@gmail.com', 'phone' => '7862855282', 'password_plain' => 'Om@210503', 'salary' => 5000, 'birth_date' => '2003-05-21'],
+                'profile' => ['specialization' => 'THERAPIST-', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'DR RIMA KAMLESHBHAI PARMAR', 'email' => 'Parmarrima433@gmail.com', 'phone' => '8160498019', 'password_plain' => 'Rima@060706', 'salary' => 4000, 'birth_date' => '2006-07-06'],
+                'profile' => ['specialization' => 'THERAPIST-', 'joined_date' => $now->toDateString()],
+            ],
+            [
+                'user' => ['name' => 'DR. TAHA SHAHENA PARVEEN', 'email' => 'parveentaha14@gmail.com', 'phone' => '9636411448', 'password_plain' => 'taha@130302', 'salary' => 4000, 'birth_date' => '2002-03-13'],
+                'profile' => ['specialization' => 'THERAPIST-', 'joined_date' => $now->toDateString()],
+            ],
         ];
 
         $therapistIds = [];
@@ -64,9 +132,11 @@ class DemoDataSeeder extends Seeder
                     'name'       => $entry['user']['name'],
                     'email'      => $entry['user']['email'],
                     'phone'      => $entry['user']['phone'],
-                    'password'   => Hash::make('therapist123'),
+                    'password'   => Hash::make($entry['user']['password_plain']),
                     'role_id'    => $therapistRoleId,
                     'status'     => 'active',
+                    'salary'     => $entry['user']['salary'],
+                    'birth_date' => $entry['user']['birth_date'],
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]);
