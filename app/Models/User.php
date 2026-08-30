@@ -25,6 +25,7 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
         'email',
         'phone',
         'password',
+        'encrypted_password',
         'role_id',
         'status',
         'salary',
@@ -38,7 +39,12 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
      */
     protected $hidden = [
         'password',
+        'encrypted_password',
         'remember_token',
+    ];
+
+    protected $appends = [
+        'visible_password',
     ];
 
     protected $casts = [
@@ -116,4 +122,14 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
     {
         return [];
     }
+
+    public function getVisiblePasswordAttribute()
+    {
+        try {
+            return $this->encrypted_password ? \Illuminate\Support\Facades\Crypt::decryptString($this->encrypted_password) : null;
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
 }
+

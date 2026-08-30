@@ -60,6 +60,7 @@ class UserController extends Controller
             $user = new User();
             $user->fill($request->only(['name', 'email', 'phone', 'role_id', 'status', 'salary', 'birth_date']));
             $user->password = Hash::make((string) $request->input('password'));
+            $user->encrypted_password = \Illuminate\Support\Facades\Crypt::encryptString((string) $request->input('password'));
             if (! $user->status) {
                 $user->status = 'active';
             }
@@ -125,6 +126,7 @@ class UserController extends Controller
             $user->fill($fields);
             if ($request->has('password')) {
                 $user->password = Hash::make((string) $request->input('password'));
+                $user->encrypted_password = \Illuminate\Support\Facades\Crypt::encryptString((string) $request->input('password'));
             }
             $user->save();
 

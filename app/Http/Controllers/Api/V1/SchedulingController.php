@@ -56,6 +56,14 @@ class SchedulingController extends Controller
 
             $createdRows = [];
 
+            $user = $request->user();
+            if ($user->role->role_type === 'therapist') {
+                $myTherapistId = \App\Models\Therapist::query()->where('user_id', $user->id)->value('id');
+                if (! $myTherapistId || $therapist_id !== (int) $myTherapistId) {
+                    return ApiResponse::error('Forbidden', 403);
+                }
+            }
+
             \DB::beginTransaction();
             foreach ($patient_ids as $patient_id) {
                 // Check if this exact booking already exists to prevent duplicate
@@ -178,8 +186,14 @@ class SchedulingController extends Controller
             return ApiResponse::error('Booking not found', 404);
         }
 
-        $row->status = 'cancelled';
-        $row->save();
+        // Delete associated session if it exists (child table equivalent)
+        \App\Models\TherapySession::where('patient_id', $row->patient_id)
+            ->where('therapist_id', $row->therapist_id)
+            ->where('slot_id', $row->slot_id)
+            ->where('session_date', $row->date)
+            ->delete();
+
+        $row->delete();
 
         return ApiResponse::success(null, 'Cancelled');
     }

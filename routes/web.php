@@ -193,12 +193,14 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
 
     // Scheduling (Admin APIs)
     $router->group(['middleware' => ['auth', 'role:admin']], function () use ($router) {
-        $router->get('time-slots', 'Api\\V1\\TimeSlotController@index');
-        $router->get('scheduling/daily', 'Api\\V1\\SchedulingController@daily');
-        $router->get('scheduling/availability', 'Api\\V1\\SchedulingController@availability');
-        $router->get('scheduling/bulk-availability', 'Api\\V1\\SchedulingController@bulkAvailability');
-        $router->get('waiting-list', 'Api\\V1\\WaitingListController@index');
-        $router->put('scheduling/daily/{id}', 'Api\\V1\\SchedulingController@update');
+        $router->get('scheduling/availability', 'Api\V1\SchedulingController@availability');
+        $router->get('scheduling/bulk-availability', 'Api\V1\SchedulingController@bulkAvailability');
+        $router->get('waiting-list', 'Api\V1\WaitingListController@index');
+    });
+
+    $router->group(['middleware' => ['auth', 'role:admin,therapist']], function () use ($router) {
+        $router->get('time-slots', 'Api\V1\TimeSlotController@index');
+        $router->get('scheduling/daily', 'Api\V1\SchedulingController@daily');
     });
     $router->group(['middleware' => ['auth', 'role:therapist']], function () use ($router) {
         $router->get('therapist/scheduling/daily', 'Api\\V1\\TherapistPortalController@schedulingDaily');
@@ -206,16 +208,20 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->get('therapist/scheduling/availability', 'Api\\V1\\TherapistPortalController@schedulingAvailability');
     });
     $router->group(['middleware' => ['auth', 'role:admin']], function () use ($router) {
-        $router->post('time-slots', 'Api\\V1\\TimeSlotController@store');
-        $router->put('time-slots/{id}', 'Api\\V1\\TimeSlotController@update');
-        $router->delete('time-slots/{id}', 'Api\\V1\\TimeSlotController@destroy');
-
-        $router->post('scheduling/daily', 'Api\\V1\\SchedulingController@book');
-        $router->delete('scheduling/daily/{id}', 'Api\\V1\\SchedulingController@cancel');
+        $router->put('time-slots/{id}', 'Api\V1\TimeSlotController@update');
+        $router->delete('time-slots/{id}', 'Api\V1\TimeSlotController@destroy');
 
         $router->post('waiting-list', 'Api\\V1\\WaitingListController@store');
         $router->put('waiting-list/{id}', 'Api\\V1\\WaitingListController@update');
         $router->delete('waiting-list/{id}', 'Api\\V1\\WaitingListController@destroy');
+    });
+
+    // Both Admin and Therapist can view and book/cancel slots
+    $router->group(['middleware' => ['auth', 'role:admin,therapist']], function () use ($router) {
+        $router->post('time-slots', 'Api\V1\TimeSlotController@store');
+        $router->post('scheduling/daily', 'Api\V1\SchedulingController@book');
+        $router->put('scheduling/daily/{id}', 'Api\V1\SchedulingController@update');
+        $router->delete('scheduling/daily/{id}', 'Api\V1\SchedulingController@cancel');
     });
 
     // Sessions (Admin APIs)

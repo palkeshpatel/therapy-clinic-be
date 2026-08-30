@@ -19,7 +19,14 @@ class RoleMiddleware
         $user->loadMissing('role');
         $userRoleType = optional($user->role)->role_type;
 
-        if (! $userRoleType || ! in_array($userRoleType, $roleTypes, true)) {
+        $parsedRoles = [];
+        foreach ($roleTypes as $role) {
+            foreach (explode(',', $role) as $r) {
+                $parsedRoles[] = trim($r);
+            }
+        }
+
+        if (! $userRoleType || ! in_array($userRoleType, $parsedRoles, true)) {
             return ApiResponse::error('Forbidden — insufficient role type', 403);
         }
 

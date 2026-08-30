@@ -133,12 +133,18 @@ class DemoDataSeeder extends Seeder
                     'email'      => $entry['user']['email'],
                     'phone'      => $entry['user']['phone'],
                     'password'   => Hash::make($entry['user']['password_plain']),
+                    'encrypted_password' => \Illuminate\Support\Facades\Crypt::encryptString($entry['user']['password_plain']),
                     'role_id'    => $therapistRoleId,
                     'status'     => 'active',
                     'salary'     => $entry['user']['salary'],
                     'birth_date' => $entry['user']['birth_date'],
                     'created_at' => $now,
                     'updated_at' => $now,
+                ]);
+            } else {
+                DB::table('users')->where('id', $userId)->update([
+                    'password' => Hash::make($entry['user']['password_plain']),
+                    'encrypted_password' => \Illuminate\Support\Facades\Crypt::encryptString($entry['user']['password_plain']),
                 ]);
             }
 

@@ -25,6 +25,7 @@ class AdminUserSeeder extends Seeder
                 'name'       => 'Administrator',
                 'phone'      => '9999999999',
                 'password'   => Hash::make('admin123'),
+                'encrypted_password' => \Illuminate\Support\Facades\Crypt::encryptString('admin123'),
                 'role_id'    => $adminRoleId,
                 'status'     => 'active',
                 'created_at' => $now,

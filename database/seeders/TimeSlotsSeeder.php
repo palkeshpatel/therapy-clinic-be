@@ -20,7 +20,7 @@ class TimeSlotsSeeder extends Seeder
         $testSlot = env('TIME_SLOT_TEST');
         $isTest24 = (app()->environment('local') && $testSlot == '24');
 
-        $startHour = $isTest24 ? 0 : 8;
+        $startHour = $isTest24 ? 0 : 9;
         $endHour = $isTest24 ? 24 : 20;
 
         $currentTime = Carbon::today()->addHours($startHour);

@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
      */
     protected $commands = [
         Commands\AutoPunchOut::class,
+        Commands\ResetPasswords::class,
     ];
 
     /**

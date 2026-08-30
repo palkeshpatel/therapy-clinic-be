@@ -30,9 +30,21 @@ class AuthController extends Controller
             /** @var \Tymon\JWTAuth\JWTGuard $guard */
             $guard = Auth::guard('api');
 
-            if (! $token = $guard->attempt($credentials)) {
+            $userModel = \App\Models\User::where('email', $credentials['email'])->first();
+            if (! $userModel) {
                 return ApiResponse::error('Invalid credentials', 401);
             }
+
+            try {
+                $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($userModel->encrypted_password);
+                if ($decrypted !== $credentials['password']) {
+                    return ApiResponse::error('Invalid credentials', 401);
+                }
+            } catch (\Exception $e) {
+                return ApiResponse::error('Invalid credentials', 401);
+            }
+
+            $token = $guard->login($userModel);
 
             $user = $guard->user();
             $user->loadMissing('role.permissions');
