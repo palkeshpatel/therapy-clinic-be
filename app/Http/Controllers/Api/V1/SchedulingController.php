@@ -64,6 +64,18 @@ class SchedulingController extends Controller
                 }
             }
 
+            // Shift Validation
+            $slot = \App\Models\TimeSlot::find($slot_id);
+            $therapist = \App\Models\Therapist::find($therapist_id);
+            
+            if ($slot && $therapist && $therapist->shift_start_time && $therapist->shift_end_time) {
+                if ($slot->start_time < $therapist->shift_start_time || $slot->end_time > $therapist->shift_end_time) {
+                    $s = \Carbon\Carbon::parse($therapist->shift_start_time)->format('g:i A');
+                    $e = \Carbon\Carbon::parse($therapist->shift_end_time)->format('g:i A');
+                    return ApiResponse::error("Therapist {$therapist->name} is not available during the selected shift time. Available shift: {$s} to {$e} only.", 422);
+                }
+            }
+
             \DB::beginTransaction();
             foreach ($patient_ids as $patient_id) {
                 // Check if this exact booking already exists to prevent duplicate

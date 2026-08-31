@@ -14,6 +14,8 @@ class PatientTherapy extends Model
         'therapist_id',
         'billing_type',
         'fee',
+        'number_of_days',
+        'total_sessions',
         'start_date',
         'end_date',
         'status',

@@ -75,6 +75,8 @@ class UserController extends Controller
                     'phone' => $user->phone,
                     'status' => $user->status,
                     'specialization' => $request->input('specialization'),
+                    'shift_start_time' => $request->input('shift_start_time'),
+                    'shift_end_time' => $request->input('shift_end_time'),
                 ]);
             }
 
@@ -143,6 +145,8 @@ class UserController extends Controller
                     'phone' => $user->phone,
                     'status' => $user->status,
                     'specialization' => $request->input('specialization'),
+                    'shift_start_time' => $request->input('shift_start_time'),
+                    'shift_end_time' => $request->input('shift_end_time'),
                 ]);
                 $therapist->save();
             } else {

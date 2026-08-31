@@ -57,6 +57,7 @@ class PatientRegistrationService
                     'therapist_id'   => $therapistId,
                     'billing_type'   => $rowBillingType,
                     'fee'            => $rowFee,
+                    'number_of_days' => $row['number_of_days'] ?? null,
                     'total_sessions' => $totalSessions,
                     'start_date'     => $row['start_date'] ?? $startDate,
                     'status'         => 'active',

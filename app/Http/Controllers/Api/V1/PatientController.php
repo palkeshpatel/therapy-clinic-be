@@ -101,6 +101,8 @@ class PatientController extends Controller
                 'address' => ['nullable', 'string'],
                 'notes' => ['nullable', 'string'],
                 'status' => ['nullable', Rule::in(['active', 'inactive', 'discharged'])],
+                'referred_by_id' => ['nullable', 'exists:users,id'],
+                'referral_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
             ];
 
             if ($hasTherapies) {
@@ -112,6 +114,7 @@ class PatientController extends Controller
                 $rules['therapies.*.fee'] = ['required', 'numeric', 'min:0'];
                 $rules['therapies.*.start_date'] = ['nullable', 'date'];
                 $rules['therapies.*.total_sessions'] = ['nullable', 'integer', 'min:1'];
+                $rules['therapies.*.number_of_days'] = ['nullable', 'integer', 'min:1'];
                 $rules['therapies.*.schedules'] = ['nullable', 'array'];
                 $rules['therapies.*.schedules.*.date'] = ['required_with:therapies.*.schedules', 'date'];
                 $rules['therapies.*.schedules.*.slot_id'] = ['required_with:therapies.*.schedules', 'integer', 'exists:time_slots,id'];
@@ -133,6 +136,8 @@ class PatientController extends Controller
                 'notes',
                 'default_billing_type',
                 'status',
+                'referred_by_id',
+                'referral_percentage',
             ]);
 
             if (! $hasTherapies) {
@@ -231,6 +236,8 @@ class PatientController extends Controller
                 'notes' => ['sometimes', 'nullable', 'string'],
                 'default_billing_type' => ['sometimes', 'nullable', Rule::in(['monthly', 'session'])],
                 'status' => ['sometimes', 'required', Rule::in(['active', 'inactive', 'discharged'])],
+                'referred_by_id' => ['sometimes', 'nullable', 'exists:users,id'],
+                'referral_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
             ];
 
             if ($hasTherapies) {
@@ -241,6 +248,7 @@ class PatientController extends Controller
                 $rules['therapies.*.fee'] = ['required', 'numeric', 'min:0'];
                 $rules['therapies.*.start_date'] = ['nullable', 'date'];
                 $rules['therapies.*.total_sessions'] = ['nullable', 'integer', 'min:1'];
+                $rules['therapies.*.number_of_days'] = ['nullable', 'integer', 'min:1'];
                 $rules['therapies.*.schedules'] = ['nullable', 'array'];
                 $rules['therapies.*.schedules.*.date'] = ['required_with:therapies.*.schedules', 'date'];
                 $rules['therapies.*.schedules.*.slot_id'] = ['required_with:therapies.*.schedules', 'integer', 'exists:time_slots,id'];
@@ -261,6 +269,8 @@ class PatientController extends Controller
                     'notes',
                     'default_billing_type',
                     'status',
+                'referred_by_id',
+                    'referral_percentage',
                 ]));
                 $patient->save();
 
@@ -297,6 +307,7 @@ class PatientController extends Controller
                             'billing_type' => $rowBillingType,
                             'fee' => $rowFee,
                             'total_sessions' => isset($row['total_sessions']) ? (int) $row['total_sessions'] : null,
+                            'number_of_days' => isset($row['number_of_days']) ? (int) $row['number_of_days'] : null,
                             'start_date' => $row['start_date'] ?? $startDate,
                             'status' => 'active',
                         ]);

@@ -17,6 +17,8 @@ class Therapist extends Model
         'email',
         'joined_date',
         'status',
+        'shift_start_time',
+        'shift_end_time',
     ];
 
     protected $casts = [

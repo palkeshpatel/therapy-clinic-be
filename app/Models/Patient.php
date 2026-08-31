@@ -21,6 +21,8 @@ class Patient extends Model
         'notes',
         'default_billing_type',
         'status',
+        'referred_by_id',
+        'referral_percentage',
     ];
 
     protected $casts = [
@@ -67,5 +69,9 @@ class Patient extends Model
     {
         return $this->hasOne(PatientIntake::class);
     }
-}
 
+    public function referredBy()
+    {
+        return $this->belongsTo(User::class, 'referred_by_id');
+    }
+}
