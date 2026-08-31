@@ -27,12 +27,23 @@ class CorsMiddleware
                 ->header('Access-Control-Max-Age', '86400');
         }
 
-        $response = $next($request);
+        try {
+            $response = $next($request);
+        } catch (\Throwable $e) {
+            $response = app(\Illuminate\Contracts\Debug\ExceptionHandler::class)->render($request, $e);
+        }
 
-        $response->headers->set('Access-Control-Allow-Origin', $allowOrigin);
-        $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        $response->headers->set('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization, X-Requested-With');
-        $response->headers->set('Access-Control-Allow-Credentials', 'true');
+        if (method_exists($response, 'header')) {
+            $response->header('Access-Control-Allow-Origin', $allowOrigin);
+            $response->header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+            $response->header('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization, X-Requested-With');
+            $response->header('Access-Control-Allow-Credentials', 'true');
+        } elseif (property_exists($response, 'headers')) {
+            $response->headers->set('Access-Control-Allow-Origin', $allowOrigin);
+            $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+            $response->headers->set('Access-Control-Allow-Headers', 'Origin, Content-Type, Accept, Authorization, X-Requested-With');
+            $response->headers->set('Access-Control-Allow-Credentials', 'true');
+        }
 
         return $response;
     }
