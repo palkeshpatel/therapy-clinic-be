@@ -224,6 +224,7 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->delete('scheduling/daily/{id}', 'Api\V1\SchedulingController@cancel');
         
         $router->get('scheduling/patient-bookings/{patientId}', 'Api\V1\SchedulingController@patientBookings');
+        $router->get('scheduling/therapist-bookings/{therapistId}', 'Api\V1\SchedulingController@therapistBookings');
         $router->post('scheduling/takeover', 'Api\V1\SchedulingController@takeover');
     });
 

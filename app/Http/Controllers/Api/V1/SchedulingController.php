@@ -34,6 +34,23 @@ class SchedulingController extends Controller
         return ApiResponse::success($query->get(), 'OK');
     }
 
+    public function therapistBookings(Request $request, $therapistId)
+    {
+        $date = $request->input('date');
+
+        $query = DailySchedule::query()
+            ->with(['slot', 'patient', 'therapy', 'therapist'])
+            ->where('therapist_id', $therapistId);
+
+        if ($date) {
+            $query->whereDate('date', $date);
+        }
+
+        $query->orderBy('date')->orderBy('slot_id');
+
+        return ApiResponse::success($query->get(), 'OK');
+    }
+
     public function takeover(Request $request)
     {
         try {
