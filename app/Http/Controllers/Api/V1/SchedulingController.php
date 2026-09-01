@@ -55,7 +55,7 @@ class SchedulingController extends Controller
     {
         try {
             $this->validate($request, [
-                'booking_id' => ['required', 'integer', 'exists:daily_schedules,id'],
+                'booking_id' => ['required', 'integer', 'exists:daily_schedule,id'],
                 'new_therapist_id' => ['required', 'integer', 'exists:therapists,id'],
             ]);
 
