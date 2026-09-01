@@ -222,6 +222,9 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->post('scheduling/daily', 'Api\V1\SchedulingController@book');
         $router->put('scheduling/daily/{id}', 'Api\V1\SchedulingController@update');
         $router->delete('scheduling/daily/{id}', 'Api\V1\SchedulingController@cancel');
+        
+        $router->get('scheduling/patient-bookings/{patientId}', 'Api\V1\SchedulingController@patientBookings');
+        $router->post('scheduling/takeover', 'Api\V1\SchedulingController@takeover');
     });
 
     // Sessions (Admin APIs)

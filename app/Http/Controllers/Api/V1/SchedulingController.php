@@ -17,6 +17,45 @@ use Illuminate\Validation\ValidationException;
 
 class SchedulingController extends Controller
 {
+    public function patientBookings(Request $request, $patientId)
+    {
+        $date = $request->input('date');
+
+        $query = DailySchedule::query()
+            ->with(['slot', 'therapist', 'therapy'])
+            ->where('patient_id', $patientId);
+
+        if ($date) {
+            $query->whereDate('date', $date);
+        }
+
+        $query->orderBy('date')->orderBy('slot_id');
+
+        return ApiResponse::success($query->get(), 'OK');
+    }
+
+    public function takeover(Request $request)
+    {
+        try {
+            $this->validate($request, [
+                'booking_id' => ['required', 'integer', 'exists:daily_schedules,id'],
+                'new_therapist_id' => ['required', 'integer', 'exists:therapists,id'],
+            ]);
+
+            $booking = DailySchedule::findOrFail($request->input('booking_id'));
+            
+            // Reassign the booking
+            $booking->therapist_id = $request->input('new_therapist_id');
+            $booking->save();
+
+            return ApiResponse::success($booking, 'Booking reassigned successfully');
+        } catch (ValidationException $e) {
+            return ApiResponse::error('Validation failed', 422, $e->errors());
+        } catch (\Exception $e) {
+            return ApiResponse::error('Failed to reassign booking', 500);
+        }
+    }
+
     public function daily(Request $request)
     {
         $date = (string) $request->input('date', Carbon::today()->toDateString());
