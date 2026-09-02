@@ -23,11 +23,14 @@ class Patient extends Model
         'status',
         'referred_by_id',
         'referral_percentage',
+        'schedule_type',
+        'selected_days',
     ];
 
     protected $casts = [
         'dob' => 'date',
         'joining_date' => 'date',
+        'selected_days' => 'array',
     ];
 
     public function documents()

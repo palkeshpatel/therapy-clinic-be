@@ -103,6 +103,8 @@ class PatientController extends Controller
                 'status' => ['nullable', Rule::in(['active', 'inactive', 'discharged'])],
                 'referred_by_id' => ['nullable', 'exists:users,id'],
                 'referral_percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+                'schedule_type' => ['nullable', 'string'],
+                'selected_days' => ['nullable', 'array'],
             ];
 
             if ($hasTherapies) {
@@ -138,6 +140,8 @@ class PatientController extends Controller
                 'status',
                 'referred_by_id',
                 'referral_percentage',
+                'schedule_type',
+                'selected_days',
             ]);
 
             if (! $hasTherapies) {
@@ -238,6 +242,8 @@ class PatientController extends Controller
                 'status' => ['sometimes', 'required', Rule::in(['active', 'inactive', 'discharged'])],
                 'referred_by_id' => ['sometimes', 'nullable', 'exists:users,id'],
                 'referral_percentage' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:100'],
+                'schedule_type' => ['nullable', 'string'],
+                'selected_days' => ['nullable', 'array'],
             ];
 
             if ($hasTherapies) {
@@ -271,6 +277,8 @@ class PatientController extends Controller
                     'status',
                 'referred_by_id',
                     'referral_percentage',
+                    'schedule_type',
+                    'selected_days',
                 ]));
                 $patient->save();
 
