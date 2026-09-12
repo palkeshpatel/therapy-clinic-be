@@ -281,7 +281,7 @@ class InvoicePdfService
                             <!-- Amount in Words -->
                             <div style="margin-bottom: 20px;">
                                 <div style="font-size: 11px; color: #1a3c5e; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Amount in Words</div>
-                                <div style="font-size: 13px; color: #0f172a; font-weight: bold; font-style: italic;">' . $this->numberToWords($dueAmount) . '</div>
+                                <div style="font-size: 13px; color: #0f172a; font-weight: bold; font-style: italic;">' . $this->numberToWords($this->invoice->total_amount) . '</div>
                                 <hr style="border: 0; border-top: 1px solid #cbd5e1; margin-top: 24px; margin-bottom: 0;" />
                             </div>
 
@@ -336,14 +336,11 @@ class InvoicePdfService
                             <div style="margin-bottom: 20px;">
                                 <div style="font-size: 11px; color: #1a3c5e; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Notes</div>
                                 <div style="font-size: 11px; line-height: 1.5; color: #475569;">
-                                    ' . ($this->invoice->notes ? nl2br($this->e($this->invoice->notes)) : 'Thank you for trusting us with your child\'s care. Please settle the outstanding amount at your earliest convenience.') . '
+                                    ' . ($this->invoice->notes ? nl2br($this->e($this->invoice->notes)) : 'Thank you for trusting us with your child\'s care.') . '
                                 </div>
                             </div>
 
-                            <!-- Callout notification bar -->
-                            <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; padding: 10px 15px; color: #1e40af; font-size: 11px; line-height: 1.4;">
-                                Please make the payment of the outstanding amount to avoid interruption in services.
-                            </div>
+                            
                         </td>
                     </tr>
                 </table>
