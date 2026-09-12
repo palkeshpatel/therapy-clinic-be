@@ -126,7 +126,22 @@ class InvoicePdfService
             
             // Format description: Split main text and subtitle if it has parenthesis month
             $descText = $item->description;
-            $subText = 'Therapy Session Dues';
+            $subText = 'Therapy Dues';
+            $typeStr = '-';
+            
+            $descText = str_ireplace('(undefined days)', '', $descText);
+            $descText = str_ireplace('(undefined sessions)', '', $descText);
+            $descText = preg_replace('/\s+-\s+-/', ' -', $descText);
+            $descText = preg_replace('/\s+/', ' ', $descText);
+            
+            if (preg_match('/-\s*(Monthly|Session)\s*\(/i', $descText, $typeMatches)) {
+                $typeStr = ucfirst(strtolower($typeMatches[1]));
+            } elseif (stripos($descText, 'Monthly') !== false) {
+                $typeStr = 'Monthly';
+            } elseif (stripos($descText, 'Session') !== false) {
+                $typeStr = 'Session';
+            }
+
             if (preg_match('/^(.*?)\s*\((\d{4}-\d{2})\)$/', $item->description, $matches)) {
                 $descText = $matches[1];
                 $subText = 'ABA Therapy - Session Dues for ' . date('F Y', strtotime($matches[2] . '-01'));
@@ -139,7 +154,7 @@ class InvoicePdfService
                     ' . $this->e($descText) . '
                     <div style="font-size: 11px; color: #64748b; font-weight: normal; margin-top: 3px;">' . $this->e($subText) . '</div>
                 </td>
-                <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; text-align: center; color: #334155;">' . $this->e($item->quantity) . '</td>
+                <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; text-align: center; font-weight: bold; color: #1a3c5e;">' . $this->e($typeStr) . '</td>
                 <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; text-align: right; color: #334155;">' . number_format($item->amount, 2) . '</td>
                 <td style="padding: 12px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; text-align: right; color: #0f172a; font-weight: bold;">' . number_format((float) $item->amount * (int) $item->quantity, 2) . '</td>
             </tr>';
@@ -152,6 +167,9 @@ class InvoicePdfService
             <meta charset="utf-8">
             <title>Invoice ' . $this->e($this->invoice->invoice_no) . '</title>
             <style>
+                @page {
+                    margin: 20px 30px;
+                }
                 body {
                     font-family: "DejaVu Sans", sans-serif;
                     color: #334155;
@@ -236,36 +254,7 @@ class InvoicePdfService
                             </div>
                         </td>
                         
-                        <!-- Grid Cards (Right) -->
-                        <td class="valign-top" style="width: 55%;">
-                            <div style="border: 1px solid #dbeafe; border-radius: 8px; background-color: #f0f7ff; padding: 12px; margin-top: 23px;">
-                                <table class="w-100 border-collapse" style="text-align: center; font-size: 10px; line-height: 1.4;">
-                                    <tr>
-                                        <!-- Card 1 -->
-                                        <td style="width: 25%; border-right: 1px solid #bfdbfe; padding: 5px 0;">
-                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 4px;">Invoice Date</div>
-                                            <div class="text-dark font-bold" style="font-size: 9.5px;">' . date('d-M-Y', strtotime($this->invoice->invoice_date)) . '</div>
-                                        </td>
-                                        <!-- Card 2 -->
-                                        <td style="width: 25%; border-right: 1px solid #bfdbfe; padding: 5px 0;">
-                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 4px;">Billing Month</div>
-                                            <div class="text-dark font-bold" style="font-size: 9.5px;">' . $this->e($billingMonthShort) . '</div>
-                                        </td>
-                                        <!-- Card 3 -->
-                                        <td style="width: 25%; border-right: 1px solid #bfdbfe; padding: 5px 0;">
-                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 4px;">Invoice No</div>
-                                            <div class="text-dark font-bold" style="font-size: 8.5px;">' . $this->e($this->invoice->invoice_no) . '</div>
-                                        </td>
-                                        <!-- Card 4 -->
-                                        <td style="width: 25%; padding: 5px 0;">
-                                            <div style="color: #64748b; font-weight: bold; text-transform: uppercase; font-size: 8px; margin-bottom: 4px;">Status</div>
-                                            <div class="font-bold" style="font-size: 9.5px; color: ' . $statusColor . '; text-transform: uppercase;">' . $this->e($this->invoice->status) . '</div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>
+                        </tr>
                 </table>
 
                 <!-- 3. Items Table -->
@@ -274,7 +263,7 @@ class InvoicePdfService
                         <tr style="background-color: #1a3c5e; color: #ffffff;">
                             <th style="padding: 12px 10px; text-align: center; font-size: 11px; font-weight: bold; border-top-left-radius: 6px; border-bottom-left-radius: 6px; width: 40px;">#</th>
                             <th style="padding: 12px 10px; text-align: left; font-size: 11px; font-weight: bold;">DESCRIPTION</th>
-                            <th style="padding: 12px 10px; text-align: center; font-size: 11px; font-weight: bold; width: 60px;">QTY</th>
+                            <th style="padding: 12px 10px; text-align: center; font-size: 11px; font-weight: bold; width: 80px;">TYPE</th>
                             <th style="padding: 12px 10px; text-align: right; font-size: 11px; font-weight: bold; width: 110px;">RATE (&#8377;)</th>
                             <th style="padding: 12px 10px; text-align: right; font-size: 11px; font-weight: bold; width: 120px; border-top-right-radius: 6px; border-bottom-right-radius: 6px;">AMOUNT (&#8377;)</th>
                         </tr>
@@ -293,7 +282,7 @@ class InvoicePdfService
                             <div style="margin-bottom: 20px;">
                                 <div style="font-size: 11px; color: #1a3c5e; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Amount in Words</div>
                                 <div style="font-size: 13px; color: #0f172a; font-weight: bold; font-style: italic;">' . $this->numberToWords($dueAmount) . '</div>
-                                <hr style="border: 0; border-top: 1px solid #cbd5e1; margin-top: 8px; margin-bottom: 0;" />
+                                <hr style="border: 0; border-top: 1px solid #cbd5e1; margin-top: 24px; margin-bottom: 0;" />
                             </div>
 
                             <!-- Payment Details -->
@@ -331,16 +320,9 @@ class InvoicePdfService
                                     <td class="text-dark font-bold" style="text-align: right; padding: 6px 10px; font-size: 13px; border-top: 1px solid #cbd5e1;">Total Bill</td>
                                     <td class="text-dark font-bold" style="text-align: right; padding: 6px 10px; font-size: 14px; border-top: 1px solid #cbd5e1; width: 130px;">' . $this->formatCurrency($this->invoice->total_amount) . '</td>
                                 </tr>
-                                <tr>
-                                    <td style="text-align: right; padding: 4px 10px; color: #16a34a; font-weight: bold;">Paid So Far</td>
-                                    <td style="text-align: right; padding: 4px 10px; color: #16a34a; font-weight: bold; width: 130px;">' . $this->formatCurrency($this->invoice->paid_amount) . '</td>
-                                </tr>
                                 
-                                <!-- Outstanding highlighted bar -->
-                                <tr style="background-color: #fff7ed; border: 1px solid #fed7aa;">
-                                    <td style="text-align: right; padding: 10px; color: #ea580c; font-weight: bold; font-size: 14px; border-top-left-radius: 6px; border-bottom-left-radius: 6px;">Outstanding Due</td>
-                                    <td style="text-align: right; padding: 10px; color: #ea580c; font-weight: bold; font-size: 16px; border-top-right-radius: 6px; border-bottom-right-radius: 6px; width: 130px;">' . $this->formatCurrency($dueAmount) . '</td>
-                                </tr>
+                                
+                                
                             </table>
                         </td>
                     </tr>

@@ -128,6 +128,7 @@ class InvoiceController extends Controller
 
     public function downloadPdf($id)
     {
+        ini_set('pcre.jit', '0');
         $invoice = Invoice::with(['patient', 'items', 'payments'])->find($id);
 
         if (! $invoice) {
