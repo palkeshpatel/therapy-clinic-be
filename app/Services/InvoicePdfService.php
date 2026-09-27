@@ -281,7 +281,7 @@ class InvoicePdfService
                             <!-- Amount in Words -->
                             <div style="margin-bottom: 20px;">
                                 <div style="font-size: 11px; color: #1a3c5e; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Amount in Words</div>
-                                <div style="font-size: 13px; color: #0f172a; font-weight: bold; font-style: italic;">' . $this->numberToWords($this->invoice->total_amount) . '</div>
+                                <div style="font-size: 13px; color: #0f172a; font-weight: bold; font-style: italic;">' . $this->numberToWords((float) $this->invoice->total_amount) . '</div>
                                 <hr style="border: 0; border-top: 1px solid #cbd5e1; margin-top: 24px; margin-bottom: 0;" />
                             </div>
 

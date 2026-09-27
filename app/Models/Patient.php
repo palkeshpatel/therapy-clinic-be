@@ -21,7 +21,7 @@ class Patient extends Model
         'notes',
         'default_billing_type',
         'status',
-        'referred_by_id',
+        'referred_by',
         'referral_percentage',
         'schedule_type',
         'selected_days',
@@ -73,8 +73,5 @@ class Patient extends Model
         return $this->hasOne(PatientIntake::class);
     }
 
-    public function referredBy()
-    {
-        return $this->belongsTo(User::class, 'referred_by_id');
-    }
+    // Remove referredBy relation as it is a string now
 }
