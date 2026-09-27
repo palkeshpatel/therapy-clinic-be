@@ -126,6 +126,7 @@ $router->group(['prefix' => 'api/v1'], function () use ($router) {
         $router->get('patient-therapies', 'Api\\V1\\PatientTherapyController@index');
     });
     $router->group(['middleware' => ['auth', 'role:admin']], function () use ($router) {
+        $router->post('therapies/reorder', 'Api\\V1\\TherapyController@reorder');
         $router->post('therapies', 'Api\\V1\\TherapyController@store');
         $router->put('therapies/{id}', 'Api\\V1\\TherapyController@update');
         $router->delete('therapies/{id}', 'Api\\V1\\TherapyController@destroy');

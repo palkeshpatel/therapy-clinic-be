@@ -13,11 +13,13 @@ class Therapy extends Model
         'session_price',
         'fixed_price',
         'status',
+        'sequence',
     ];
 
     protected $casts = [
         'session_price' => 'decimal:2',
         'fixed_price' => 'decimal:2',
+        'sequence' => 'integer',
     ];
 
     public function patientTherapies()
