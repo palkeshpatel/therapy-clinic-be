@@ -313,10 +313,6 @@ class InvoicePdfService
                                     <td class="text-dark font-bold" style="text-align: right; padding: 4px 10px; width: 130px;">' . $this->formatCurrency($this->invoice->total_amount) . '</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted" style="text-align: right; padding: 4px 10px;">Discount</td>
-                                    <td class="text-dark font-bold" style="text-align: right; padding: 4px 10px; width: 130px;">' . $this->formatCurrency(0) . '</td>
-                                </tr>
-                                <tr>
                                     <td class="text-dark font-bold" style="text-align: right; padding: 6px 10px; font-size: 13px; border-top: 1px solid #cbd5e1;">Total Bill</td>
                                     <td class="text-dark font-bold" style="text-align: right; padding: 6px 10px; font-size: 14px; border-top: 1px solid #cbd5e1; width: 130px;">' . $this->formatCurrency($this->invoice->total_amount) . '</td>
                                 </tr>
